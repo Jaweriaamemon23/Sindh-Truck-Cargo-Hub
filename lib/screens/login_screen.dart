@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
-
-// Import the respective dashboard files
-import 'admin_dashboard.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'registration_screen.dart';
 import 'truck_owner_dashboard.dart';
 import 'cargo_transporter_dashboard.dart';
 import 'business_owner_dashboard.dart';
-import 'registration_screen.dart'; // Import the Registration Screen
-
-void main() => runApp(MyApp());
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false, // Hide the debug banner
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home: LoginScreen(),
-    );
-  }
-}
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -31,125 +14,189 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _isLoading = false;
 
-  // Variable to store selected user type (if needed)
-  String? selectedUserType;
+  void _handleLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please enter email and password.')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      print("🔄 Attempting login...");
+      // 🔑 Authenticate user
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      User? user = userCredential.user;
+      print("✅ User logged in: ${user?.uid}");
+
+      if (user == null) {
+        print("❌ ERROR: FirebaseAuth returned null user.");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Unexpected error occurred.")),
+        );
+        return;
+      }
+
+      // 🔄 Force refresh user data
+      await user.reload();
+      user = _auth.currentUser; // Get updated user data
+
+      // ✅ Check email verification
+      if (!user!.emailVerified) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Please verify your email before logging in.')),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      print("✅ Email verified!");
+
+      // ✅ Update Firestore to reflect email verification
+      if (user.email != null) {
+        await _firestore.collection('users').doc(user.email).update({
+          'emailVerified':
+              true, // 🔥 Fix: Update Firestore email verification status
+        }).catchError((error) {
+          print("❌ Firestore update failed: $error");
+        });
+      }
+
+      // ✅ Fetch user phone from Firestore using email
+      if (user.email == null) {
+        print("❌ ERROR: User email is NULL in FirebaseAuth!");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text("Error: Your email is missing from your account.")),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      QuerySnapshot userQuery = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: user.email!)
+          .limit(1)
+          .get();
+
+      if (userQuery.docs.isEmpty) {
+        print("❌ ERROR: No user found in Firestore for email: ${user.email}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("User data not found.")),
+        );
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      DocumentSnapshot userDoc = userQuery.docs.first;
+      String userType = userDoc['userType'];
+      String phone = userDoc['phone'];
+
+      print("📌 UserType: $userType, Phone: $phone");
+
+      // 🚀 Navigate to the respective dashboard
+      if (userType == 'Truck Owner') {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => TruckOwnerDashboard()));
+      } else if (userType == 'Cargo Transporter') {
+        Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+                builder: (context) => CargoTransporterDashboard()));
+      } else if (userType == 'Business Owner') {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (context) => BusinessOwnerDashboard()));
+      }
+    } on FirebaseAuthException catch (e) {
+      print("❌ FirebaseAuthException: ${e.message}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login failed: ${e.message}")),
+      );
+    } catch (e) {
+      print("❌ Unexpected error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("An unexpected error occurred.")),
+      );
+    }
+
+    setState(() => _isLoading = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: Text("Login"), backgroundColor: Colors.blueAccent),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.blue.shade900, Colors.blue.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            colors: [Colors.deepPurple.shade50, Colors.blueAccent.shade200],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // App Title
-                Text(
-                  "Welcome Back!",
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: 20),
-
-                // User Type Selection (Buttons for User Types)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            padding: const EdgeInsets.all(24.0),
+            child: AutofillGroup(
+              child: Form(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _buildUserTypeButton(
-                      "Cargo Transporter",
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) =>
-                                  CargoTransporterDashboard())),
+                    Text(
+                      "Welcome Back!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueAccent),
                     ),
-                    _buildUserTypeButton(
-                      "Truck Owner",
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => TruckOwnerDashboard())),
+                    SizedBox(height: 30),
+                    _buildTextField(_emailController, "Email", Icons.email,
+                        TextInputType.emailAddress),
+                    SizedBox(height: 16),
+                    _buildTextField(_passwordController, "Password", Icons.lock,
+                        TextInputType.text,
+                        obscureText: true),
+                    SizedBox(height: 30),
+                    _isLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : ElevatedButton(
+                            onPressed: _handleLogin,
+                            style: ElevatedButton.styleFrom(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              backgroundColor: Colors.blueAccent,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
+                            ),
+                            child: Text('Login',
+                                style: TextStyle(
+                                    fontSize: 18, color: Colors.white)),
+                          ),
+                    SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => RegistrationScreen()));
+                      },
+                      child: Text("Don't have an account? Register here",
+                          style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildUserTypeButton(
-                      "Business Owner",
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => BusinessOwnerDashboard())),
-                    ),
-                    _buildUserTypeButton(
-                      "Admin",
-                      () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => AdminDashboard())),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 40),
-
-                // Email Field
-                _buildTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  icon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                SizedBox(height: 20),
-
-                // Password Field
-                _buildTextField(
-                  controller: _passwordController,
-                  label: 'Password',
-                  icon: Icons.lock,
-                  obscureText: true,
-                ),
-                SizedBox(height: 20),
-
-                // Login Button
-                _buildElevatedButton(
-                  "Login",
-                  () {
-                    // Handle the login process (you can add login logic here)
-                    print(
-                        'Email: ${_emailController.text}, Password: ${_passwordController.text}');
-                  },
-                ),
-
-                // Link to navigate to the Registration Screen
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => RegistrationScreen()),
-                    );
-                  },
-                  child: Text(
-                    'Don\'t have an account? Register here',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
@@ -157,61 +204,22 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // Method to build the user type buttons
-  Widget _buildUserTypeButton(String label, VoidCallback onPressed) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.white, // Changed to backgroundColor
-        foregroundColor: Colors.blue.shade900, // Changed to foregroundColor
-        padding: EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-      ),
-      onPressed: onPressed,
-      child: Text(label, style: TextStyle(fontSize: 14)),
-    );
-  }
-
-  // Method to build text fields (email and password)
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
+  Widget _buildTextField(TextEditingController controller, String label,
+      IconData icon, TextInputType keyboardType,
+      {bool obscureText = false}) {
+    return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.white),
         filled: true,
-        fillColor: Colors.white.withOpacity(0.8),
+        fillColor: Colors.white,
+        labelText: label,
+        prefixIcon: Icon(icon, color: Colors.deepPurple),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: BorderSide.none,
-        ),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none),
       ),
       obscureText: obscureText,
       keyboardType: keyboardType,
-    );
-  }
-
-  // Method to build Elevated Buttons
-  Widget _buildElevatedButton(String label, VoidCallback onPressed) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue.shade900, // Changed to backgroundColor
-        foregroundColor: Colors.white, // Changed to foregroundColor
-        padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
-      ),
-      onPressed: onPressed,
-      child: Text(label,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
     );
   }
 }

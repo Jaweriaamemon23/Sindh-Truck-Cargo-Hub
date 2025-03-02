@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "22061893159",
+    "project_id": "sindhtruckcargohub",
+    "storage_bucket": "sindhtruckcargohub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:22061893159:android:2b8e626f95bca96c2eb002",
+        "android_client_info": {
+          "package_name": "com.example.sindh_truck_cargo_hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDntLa-d7WO4qweTNReiJSX3PczUt16cUM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

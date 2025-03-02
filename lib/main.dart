@@ -1,31 +1,41 @@
-import 'dart:html' as html;
-import 'dart:js' as js;
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'screens/splash_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Function to load environment variables from the JS context
-void loadEnvVars() {
-  final env = js.context['env']; // Accessing the env object
-  if (env != null) {
-    print('API_KEY: ${env['API_KEY']}');
-    print('OTHER_VAR: ${env['OTHER_VAR']}');
-  } else {
-    print('Environment variables are not loaded!');
+final FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await Firebase.initializeApp(
+      options: FirebaseOptions(
+        apiKey: "AIzaSyB8daSx_lP5pBLUqiD8LsKW2Mer2V9Jy8U",
+        authDomain: "sindhtruckcargohub.firebaseapp.com",
+        projectId: "sindhtruckcargohub",
+        storageBucket: "sindhtruckcargohub.appspot.com", // Fixed this
+        messagingSenderId: "22061893159",
+        appId: "1:22061893159:web:0802de538103a6e22eb002",
+      ),
+    );
+    print("✅ Firebase initialized successfully");
+  } catch (e) {
+    print("❌ Firebase initialization error: $e");
   }
-}
 
-void main() {
-  loadEnvVars(); // Load environment variables
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      // Set SplashScreen as the initial screen
       home: const SplashScreen(),
-      debugShowCheckedModeBanner: false, // Optional: to remove the debug banner
+      debugShowCheckedModeBanner: false,
     );
   }
 }

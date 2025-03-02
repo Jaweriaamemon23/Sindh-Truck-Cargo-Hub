@@ -14,15 +14,15 @@ class _IntroScreenState extends State<IntroScreen> {
       PageController(); // Controller for page navigation
 
   final List<Widget> pages = [
-    IntroPage(
+    const IntroPage(
       title: "Vehicle Type",
       description: "Select your vehicle according to your requirement",
     ),
-    IntroPage(
+    const IntroPage(
       title: "Track Your Vehicle",
       description: "Track your vehicle in real-time with live updates.",
     ),
-    IntroPage(
+    const IntroPage(
       title: "Get Notifications",
       description: "Receive timely notifications about your vehicle status.",
     ),
@@ -33,7 +33,7 @@ class _IntroScreenState extends State<IntroScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background color for the whole intro screen (optional)
+          // Background Gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -43,17 +43,22 @@ class _IntroScreenState extends State<IntroScreen> {
               ),
             ),
           ),
+
           // PageView for content
-          PageView(
+          PageView.builder(
             controller: _pageController,
-            onPageChanged: (int index) {
+            itemCount: pages.length,
+            onPageChanged: (index) {
               setState(() {
                 currentPage = index;
               });
             },
-            children: pages,
+            itemBuilder: (context, index) {
+              return pages[index];
+            },
           ),
-          // Positioned buttons and indicators at the bottom
+
+          // Positioned controls at the bottom
           Positioned(
             bottom: 20,
             left: 20,
@@ -61,37 +66,46 @@ class _IntroScreenState extends State<IntroScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                TextButton(
-                  onPressed: () {
-                    // Skip and go to the Login screen
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => LoginScreen()),
-                    );
-                  },
-                  child: Text(
-                    "Skip",
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
+                // Skip Button
+                if (currentPage != pages.length - 1)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(builder: (context) => LoginScreen()),
+                      );
+                    },
+                    child: const Text(
+                      "Skip",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
+                    ),
+                  )
+                else
+                  const SizedBox(width: 60), // Placeholder for alignment
+
+                // Page Indicator Dots
                 Row(
                   children: List.generate(
                     pages.length,
-                    (index) => Icon(
-                      index == currentPage
-                          ? Icons.circle
-                          : Icons.circle_outlined,
-                      color: Colors.white,
-                      size: 12,
+                    (index) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Icon(
+                        Icons.circle,
+                        color: index == currentPage
+                            ? Colors.white
+                            : Colors.white70,
+                        size: index == currentPage ? 12 : 10,
+                      ),
                     ),
                   ),
                 ),
+
+                // Next or Finish Button
                 TextButton(
                   onPressed: () {
-                    // Navigate to the next page, or finish and navigate to login
                     if (currentPage < pages.length - 1) {
                       _pageController.nextPage(
-                        duration: Duration(milliseconds: 300),
+                        duration: const Duration(milliseconds: 300),
                         curve: Curves.ease,
                       );
                     } else {
@@ -103,7 +117,7 @@ class _IntroScreenState extends State<IntroScreen> {
                   },
                   child: Text(
                     currentPage == pages.length - 1 ? "Finish" : "Next",
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
               ],
@@ -122,33 +136,39 @@ class IntroPage extends StatelessWidget {
   const IntroPage({
     required this.title,
     required this.description,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Optionally, you can add some padding or decoration if needed here
-        SizedBox(height: 20),
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Title
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 26,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+            textAlign: TextAlign.center,
           ),
-        ),
-        SizedBox(height: 10),
-        Text(
-          description,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 18,
-            color: Colors.white70,
+          const SizedBox(height: 12),
+
+          // Description
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.white70,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
