@@ -65,4 +65,3 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
     );
   }
 }
-
