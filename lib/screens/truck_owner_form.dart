@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'firestore_helper.dart'; // Import Firestore helper functions
-import 'login_screen.dart'; // ✅ Import Login Screen
+import 'firestore_helper.dart'; // Firestore helper functions
+import 'truck_owner_image_upload.dart'; // Import Image Upload Screen
 
 class TruckOwnerForm extends StatefulWidget {
-  final String
-      userId; // Receive the userId (Phone Number) from the previous screen
+  final String userId; // Phone Number as userId
 
   const TruckOwnerForm({required this.userId, Key? key}) : super(key: key);
 
@@ -19,11 +18,11 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
   final TextEditingController _vehicleNumController = TextEditingController();
   final TextEditingController _licenseNumController = TextEditingController();
 
-  /// **🔥 Submits the form & navigates to Login Screen**
+  /// **🔥 Submit Truck Owner Form & Move to Image Upload Page**
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // ✅ Collect form data
+        // ✅ Collect Truck Owner Data
         Map<String, dynamic> truckOwnerData = {
           'driverAge': int.parse(_driverAgeController.text.trim()),
           'vehicleType': _vehicleTypeController.text.trim(),
@@ -32,21 +31,15 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
           'createdAt': DateTime.now(),
         };
 
-        // ✅ Save Truck Owner Data in Firestore (Subcollection inside user's document)
-        await FirestoreHelper()
-            .createTruckOwnerData(widget.userId, truckOwnerData);
-
-        // ✅ Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Registration successful! Please log in.')),
-        );
-
-        // ✅ Navigate to Login Screen (Instead of Dashboard)
+        // ✅ Navigate to TruckOwnerImageUpload screen **before saving to Firestore**
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => LoginScreen(),
+            builder: (context) => TruckOwnerImageUpload(
+              userId: widget.userId,
+              formData:
+                  truckOwnerData, // ✅ Pass form data to image upload screen
+            ),
           ),
         );
       } catch (e) {
@@ -99,7 +92,7 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
                           borderRadius: BorderRadius.circular(12)),
                     ),
                     child: const Text(
-                      "Submit",
+                      "Next",
                       style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

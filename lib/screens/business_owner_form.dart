@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'login_screen.dart'; // ✅ Import the login screen
 
 class BusinessOwnerForm extends StatefulWidget {
   final String name;
@@ -19,6 +20,7 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
   final TextEditingController _businessTypeController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
 
+  /// **🔥 Save Business Owner Data & Navigate to Login**
   void _saveBusinessOwnerData() async {
     if (_formKey.currentState!.validate()) {
       String businessName = _businessNameController.text.trim();
@@ -29,7 +31,7 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
         // Reference to Firestore
         FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-        // Store main user data
+        // ✅ Store main user data in Firestore
         DocumentReference userRef =
             firestore.collection('users').doc(widget.phone);
         await userRef.set({
@@ -37,9 +39,10 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
           'email': widget.email,
           'phone': widget.phone,
           'userType': 'Business Owner',
-        });
+          'createdAt': FieldValue.serverTimestamp(), // ✅ Store creation time
+        }, SetOptions(merge: true)); // ✅ Merge to prevent data overwrite
 
-        // Store business owner-specific data in subcollection
+        // ✅ Store business owner-specific data in subcollection
         await userRef.collection('business_owner').doc('details').set({
           'businessName': businessName,
           'businessType': businessType,
@@ -49,6 +52,12 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Business owner data saved successfully!')),
         );
+
+        // ✅ Navigate to Login Screen after successful submission
+        Future.delayed(Duration(seconds: 2), () {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (context) => LoginScreen()));
+        });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving data: $e')),
@@ -77,10 +86,11 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
                   _locationController, "Location", Icons.location_on),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _saveBusinessOwnerData,
+                onPressed:
+                    _saveBusinessOwnerData, // ✅ Calls function to save and navigate
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent),
-                child: Text("Submit",
+                child: Text("Register",
                     style: TextStyle(color: Colors.white, fontSize: 16)),
               ),
             ],
@@ -90,6 +100,7 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
     );
   }
 
+  /// **📌 Custom Text Field Builder**
   Widget _buildTextField(
       TextEditingController controller, String label, IconData icon) {
     return Padding(

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'login_screen.dart';
 
 class TruckOwnerImageUpload extends StatefulWidget {
   final String userId;
@@ -23,8 +24,9 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
   Uint8List? _nicBackImage;
   Uint8List? _vehicleImage;
   bool _isUploading = false;
+  double _uploadProgress = 0.0; // Track upload progress
 
-  // Function to pick images
+  /// **🔥 Pick an Image from File Picker**
   Future<void> _pickImage(String type) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.image,
@@ -43,14 +45,14 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
     }
   }
 
-  // Function to upload images and save URLs to Firestore
+  /// **🔥 Upload Images and Save Data to Firestore**
   Future<void> _uploadImages() async {
     if (_nicFrontImage == null ||
         _nicBackImage == null ||
         _vehicleImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("Please upload all images before submitting.")),
+            content: Text("⚠️ Please upload all images before submitting.")),
       );
       return;
     }
@@ -62,7 +64,7 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
       final firestore = FirebaseFirestore.instance;
       Map<String, String> imageUrls = {};
 
-      // Upload images and get URLs
+      // **🔥 Upload Images and Track Progress**
       imageUrls['nicFrontUrl'] =
           await _uploadImage(storage, _nicFrontImage!, 'nic_front');
       imageUrls['nicBackUrl'] =
@@ -70,87 +72,116 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
       imageUrls['vehicleUrl'] =
           await _uploadImage(storage, _vehicleImage!, 'vehicle');
 
-      // Merge formData with image URLs
+      // **🔥 Merge Form Data with Image URLs**
       final userData = {
-        ...widget.formData,
-        ...imageUrls,
+        ...widget.formData, // Truck Owner Form Data
+        ...imageUrls, // Uploaded Image URLs
       };
 
-      // Save all data to Firestore
+      // **🔥 Save Data to Firestore**
       await firestore.collection('users').doc(widget.userId).set(userData);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registration completed successfully!")),
+        const SnackBar(content: Text("✅ Registration completed successfully!")),
       );
 
-      // Navigate to the desired screen after successful upload
-      // For example:
-      // Navigator.pushReplacement(
-      //   context,
-      //   MaterialPageRoute(builder: (context) => TruckOwnerDashboard()),
-      // );
+      // **🔥 Navigate to Login Page**
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+      );
     } catch (e) {
+      print("🔥 Error uploading images: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error uploading images: $e")),
+        SnackBar(content: Text("❌ Error uploading images: $e")),
       );
     } finally {
       setState(() => _isUploading = false);
     }
   }
 
-  // Helper function to upload a single image
+  /// **🔥 Upload Image to Firebase Storage with Progress Tracking**
   Future<String> _uploadImage(
       FirebaseStorage storage, Uint8List imageData, String path) async {
     Reference ref = storage.ref().child('$path/${widget.userId}.jpg');
     UploadTask uploadTask = ref.putData(imageData);
-    await uploadTask.whenComplete(() => {});
+
+    // Track Progress
+    uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+      setState(() {
+        _uploadProgress = snapshot.bytesTransferred / snapshot.totalBytes;
+      });
+    });
+
+    await uploadTask;
     return await ref.getDownloadURL();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.blueAccent.shade100,
       appBar: AppBar(
         title: const Text("Upload NIC & Vehicle Images"),
         backgroundColor: Colors.blueAccent,
+        elevation: 0,
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Card(
-            elevation: 8,
+            elevation: 10,
+            shadowColor: Colors.blueAccent.shade200,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  _imagePickerButton("Upload NIC Front", "NIC_Front"),
-                  if (_nicFrontImage != null)
-                    Image.memory(_nicFrontImage!, height: 100),
-                  const SizedBox(height: 16),
-                  _imagePickerButton("Upload NIC Back", "NIC_Back"),
-                  if (_nicBackImage != null)
-                    Image.memory(_nicBackImage!, height: 100),
-                  const SizedBox(height: 16),
-                  _imagePickerButton("Upload Vehicle Image", "Vehicle"),
-                  if (_vehicleImage != null)
-                    Image.memory(_vehicleImage!, height: 100),
-                  const SizedBox(height: 30),
-                  ElevatedButton(
-                    onPressed: _isUploading ? null : _uploadImages,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                  const Text(
+                    "Upload Required Documents",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueAccent,
                     ),
-                    child: _isUploading
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text("Submit",
-                            style: TextStyle(color: Colors.white)),
                   ),
+                  const SizedBox(height: 16),
+                  _imagePickerButton("NIC Front", "NIC_Front", _nicFrontImage),
+                  _imagePickerButton("NIC Back", "NIC_Back", _nicBackImage),
+                  _imagePickerButton("Vehicle Image", "Vehicle", _vehicleImage),
+                  const SizedBox(height: 30),
+                  _isUploading
+                      ? Column(
+                          children: [
+                            LinearProgressIndicator(
+                                value: _uploadProgress,
+                                backgroundColor: Colors.grey.shade300,
+                                color: Colors.blueAccent),
+                            const SizedBox(height: 10),
+                            Text(
+                              "Uploading... ${(100 * _uploadProgress).toStringAsFixed(0)}%",
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blueAccent),
+                            ),
+                          ],
+                        )
+                      : ElevatedButton(
+                          onPressed: _uploadImages,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blueAccent,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 15),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: const Text("Submit",
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                        ),
                 ],
               ),
             ),
@@ -160,16 +191,30 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
     );
   }
 
-  // Widget for image picker button
-  Widget _imagePickerButton(String label, String type) {
-    return ElevatedButton.icon(
-      onPressed: () => _pickImage(type),
-      icon: const Icon(Icons.camera_alt),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blueAccent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
+  /// **🔥 Image Picker UI Component**
+  Widget _imagePickerButton(String label, String type, Uint8List? image) {
+    return Column(
+      children: [
+        ElevatedButton.icon(
+          onPressed: () => _pickImage(type),
+          icon: const Icon(Icons.camera_alt, color: Colors.white),
+          label: Text(label),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blueAccent.shade700,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+          ),
+        ),
+        const SizedBox(height: 8),
+        if (image != null)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child:
+                Image.memory(image, height: 100, width: 150, fit: BoxFit.cover),
+          ),
+        const SizedBox(height: 16),
+      ],
     );
   }
 }
