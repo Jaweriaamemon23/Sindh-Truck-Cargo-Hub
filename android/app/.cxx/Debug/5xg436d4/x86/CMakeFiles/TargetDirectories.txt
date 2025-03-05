@@ -1,0 +1,2 @@
+E:/Project/Final Year Project/Sindh-Truck-Cargo-Hub/android/app/.cxx/Debug/5xg436d4/x86/CMakeFiles/edit_cache.dir
+E:/Project/Final Year Project/Sindh-Truck-Cargo-Hub/android/app/.cxx/Debug/5xg436d4/x86/CMakeFiles/rebuild_cache.dir
