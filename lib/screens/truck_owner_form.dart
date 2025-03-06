@@ -1,9 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'firestore_helper.dart'; // Firestore helper functions
-import 'truck_owner_image_upload.dart'; // Import Image Upload Screen
+import 'login_screen.dart';
 
 class TruckOwnerForm extends StatefulWidget {
-  final String userId; // Phone Number as userId
+  final String userId;
 
   const TruckOwnerForm({required this.userId, Key? key}) : super(key: key);
 
@@ -18,11 +18,10 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
   final TextEditingController _vehicleNumController = TextEditingController();
   final TextEditingController _licenseNumController = TextEditingController();
 
-  /// **🔥 Submit Truck Owner Form & Move to Image Upload Page**
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
-        // ✅ Collect Truck Owner Data
+        // Collect Truck Owner Data
         Map<String, dynamic> truckOwnerData = {
           'driverAge': int.parse(_driverAgeController.text.trim()),
           'vehicleType': _vehicleTypeController.text.trim(),
@@ -31,20 +30,26 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
           'createdAt': DateTime.now(),
         };
 
-        // ✅ Navigate to TruckOwnerImageUpload screen **before saving to Firestore**
+        // Reference to the user's subcollection
+        CollectionReference truckOwnersRef = FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.userId)
+            .collection('truckOwners');
+
+        // Add data to the subcollection
+        await truckOwnersRef.add(truckOwnerData);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Registered successfully! Please log in.')),
+        );
+
+        // Navigate to LoginScreen after successful submission
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (context) => TruckOwnerImageUpload(
-              userId: widget.userId,
-              formData:
-                  truckOwnerData, // ✅ Pass form data to image upload screen
-            ),
-          ),
+          MaterialPageRoute(builder: (context) => LoginScreen()),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('🔥 Error saving data: $e')),
+          SnackBar(content: Text('Error saving data: $e')),
         );
       }
     }
