@@ -1,4 +1,6 @@
-2025/03/05-13:36:20.563 2d9c Reusing MANIFEST C:\Users\hp\AppData\Local\Temp\flutter_tools.20244dd1\flutter_tools_chrome_device.1768e383\Default\shared_proto_db/MANIFEST-000001
-2025/03/05-13:36:20.563 2d9c Recovering log #3
-2025/03/05-13:36:20.564 2d9c (ignoring error) C:\Users\hp\AppData\Local\Temp\flutter_tools.20244dd1\flutter_tools_chrome_device.1768e383\Default\shared_proto_db/000003.log: dropping 9006 bytes; Corruption: checksum mismatch
-2025/03/05-13:36:20.565 2d9c Reusing old log C:\Users\hp\AppData\Local\Temp\flutter_tools.20244dd1\flutter_tools_chrome_device.1768e383\Default\shared_proto_db/000003.log 
+2025/03/06-05:29:06.605 217c Reusing MANIFEST C:\Users\hp\AppData\Local\Temp\flutter_tools.520f923b\flutter_tools_chrome_device.9d7d2302\Default\shared_proto_db/MANIFEST-000001
+2025/03/06-05:29:06.606 217c Recovering log #3
+2025/03/06-05:29:06.607 217c (ignoring error) C:\Users\hp\AppData\Local\Temp\flutter_tools.520f923b\flutter_tools_chrome_device.9d7d2302\Default\shared_proto_db/000003.log: dropping 9006 bytes; Corruption: checksum mismatch
+2025/03/06-05:29:06.607 217c (ignoring error) C:\Users\hp\AppData\Local\Temp\flutter_tools.520f923b\flutter_tools_chrome_device.9d7d2302\Default\shared_proto_db/000003.log: dropping 32768 bytes; Corruption: checksum mismatch
+2025/03/06-05:29:06.607 217c (ignoring error) C:\Users\hp\AppData\Local\Temp\flutter_tools.520f923b\flutter_tools_chrome_device.9d7d2302\Default\shared_proto_db/000003.log: dropping 470 bytes; Corruption: missing start of fragmented record(2)
+2025/03/06-05:29:06.608 217c Reusing old log C:\Users\hp\AppData\Local\Temp\flutter_tools.520f923b\flutter_tools_chrome_device.9d7d2302\Default\shared_proto_db/000003.log 

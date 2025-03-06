@@ -30,22 +30,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       print("🔄 Attempting login...");
-      // 🔑 Authenticate user
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       User? user = userCredential.user;
-      print("✅ User logged in: ${user?.uid}");
 
       if (user == null) {
         print("❌ ERROR: FirebaseAuth returned null user.");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Unexpected error occurred.")),
         );
+        setState(() => _isLoading = false);
         return;
       }
+
+      print("✅ User logged in: ${user.email}");
 
       // 🔄 Force refresh user data
       await user.reload();
@@ -53,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // ✅ Check email verification
       if (!user!.emailVerified) {
+        print("❌ Email is not verified!");
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text('Please verify your email before logging in.')),
@@ -64,29 +66,20 @@ class _LoginScreenState extends State<LoginScreen> {
       print("✅ Email verified!");
 
       // ✅ Update Firestore to reflect email verification
-      if (user.email != null) {
+      try {
         await _firestore.collection('users').doc(user.email).update({
           'emailVerified':
               true, // 🔥 Fix: Update Firestore email verification status
-        }).catchError((error) {
-          print("❌ Firestore update failed: $error");
         });
+        print("✅ Firestore email verification updated!");
+      } catch (error) {
+        print("❌ Firestore update failed: $error");
       }
 
       // ✅ Fetch user phone from Firestore using email
-      if (user.email == null) {
-        print("❌ ERROR: User email is NULL in FirebaseAuth!");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text("Error: Your email is missing from your account.")),
-        );
-        setState(() => _isLoading = false);
-        return;
-      }
-
       QuerySnapshot userQuery = await _firestore
           .collection('users')
-          .where('email', isEqualTo: user.email!)
+          .where('email', isEqualTo: user.email)
           .limit(1)
           .get();
 
@@ -207,19 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildTextField(TextEditingController controller, String label,
       IconData icon, TextInputType keyboardType,
       {bool obscureText = false}) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.white,
-        labelText: label,
-        prefixIcon: Icon(icon, color: Colors.deepPurple),
-        border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          labelText: label,
+          prefixIcon: Icon(icon, color: Colors.deepPurple),
+          border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none),
+        ),
+        obscureText: obscureText,
+        keyboardType: keyboardType,
       ),
-      obscureText: obscureText,
-      keyboardType: keyboardType,
     );
   }
 }
