@@ -1,0 +1,36 @@
+# Flutter & Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.metadata
+.packages
+.pub-cache/
+.pub/
+build/
+
+# iOS & macOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Generated.xcconfig
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
+
+# Linux, Windows, Web builds
+linux/build/
+windows/build/
+web/.dart_tool/
+
+# IDE & Editor settings
+.vscode/
+.idea/
+
+# Node.js dependencies
+node_modules/
+
+# Dependency Lock Files (Optional)
+pubspec.lock
+package-lock.json
+
+# Environment Variables & Secrets
+.env
