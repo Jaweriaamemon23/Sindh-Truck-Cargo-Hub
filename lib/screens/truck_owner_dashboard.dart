@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class TruckOwnerDashboard extends StatefulWidget {
@@ -77,6 +78,13 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
 }
 
 class AvailableTrucksScreen extends StatelessWidget {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  // Function to get the current user's ID
+  String? getCurrentUserId() {
+    return _auth.currentUser?.uid;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,7 +93,7 @@ class AvailableTrucksScreen extends StatelessWidget {
           'My Trucks',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.blue.shade800,
         actions: [
           ElevatedButton(
             onPressed: () {
@@ -113,7 +121,7 @@ class AvailableTrucksScreen extends StatelessWidget {
           stream: FirebaseFirestore.instance
               .collection('trucks')
               .where('ownerId',
-                  isEqualTo: 'currentUserId') // Replace with actual owner ID
+                  isEqualTo: getCurrentUserId()) // Filter by current user's ID
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -232,6 +240,17 @@ class AvailableTrucksScreen extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
+                String? ownerId = getCurrentUserId();
+                if (ownerId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("You must be logged in to add a truck."),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+
                 _addTruck(
                   truckNumberController.text,
                   truckTypeController.text,
@@ -258,11 +277,17 @@ class AvailableTrucksScreen extends StatelessWidget {
 
   // Function to add a new truck to Firestore
   void _addTruck(String truckNumber, String truckType, int capacity) async {
+    String? ownerId = getCurrentUserId();
+    if (ownerId == null) {
+      print("Error: User not logged in.");
+      return;
+    }
+
     await FirebaseFirestore.instance.collection('trucks').add({
       'truckNumber': truckNumber,
       'truckType': truckType,
       'capacity': capacity,
-      'ownerId': 'currentUserId', // Replace with actual owner ID
+      'ownerId': ownerId, // Associate the truck with the logged-in user
     });
   }
 
