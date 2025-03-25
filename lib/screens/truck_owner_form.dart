@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
+import 'truck_owner_image_upload.dart';
 
 class TruckOwnerForm extends StatefulWidget {
   final String userId;
@@ -17,7 +18,6 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
   final TextEditingController _vehicleTypeController = TextEditingController();
   final TextEditingController _vehicleNumController = TextEditingController();
   final TextEditingController _licenseNumController = TextEditingController();
-
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -28,6 +28,7 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
           'vehicleNumber': _vehicleNumController.text.trim(),
           'licenseNumber': _licenseNumController.text.trim(),
           'createdAt': DateTime.now(),
+          'isCompleted': false, // Mark as incomplete
         };
 
         // Reference to the user's subcollection
@@ -36,16 +37,24 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
             .doc(widget.userId)
             .collection('truckOwners');
 
-        // Add data to the subcollection
-        await truckOwnersRef.add(truckOwnerData);
+        // Add data to the subcollection (temporary data with isCompleted: false)
+        DocumentReference truckOwnerRef =
+            await truckOwnersRef.add(truckOwnerData);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registered successfully! Please log in.')),
+          SnackBar(
+              content: Text('Please upload images to complete registration.')),
         );
 
-        // Navigate to LoginScreen after successful submission
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginScreen()),
+          MaterialPageRoute(
+            builder: (context) => TruckOwnerImageUpload(
+              userId: widget.userId,
+              formData: truckOwnerData,
+              truckOwnerDocId: truckOwnerRef.id,
+            ),
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
