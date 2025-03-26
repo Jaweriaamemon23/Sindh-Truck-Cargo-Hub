@@ -103,29 +103,27 @@ Future<void> addTruck(BuildContext context, String truckNumber,
   // ✅ Reference the user document
   DocumentReference userDocRef = firestore.collection('users').doc(userId);
 
-  // ✅ Get the phone number from Firestore
-  String? phoneNumber = userSnapshot.docs.first['phone'];
-  if (phoneNumber == null) {
-    showSnackBar(
-        context, "❌ Error: User's phone number not found in Firestore!");
+  // ✅ Check if any `truckOwner` exists under this user
+  QuerySnapshot truckOwnerSnapshot =
+      await userDocRef.collection('truckOwners').get();
+
+  if (truckOwnerSnapshot.docs.isEmpty) {
+    showSnackBar(context,
+        "❌ Error: No truck owner found! Please add a truck owner first.");
     return;
   }
 
-  // ✅ Reference the truckOwner document (using phone number)
-  DocumentReference truckOwnerDocRef =
-      userDocRef.collection('truckOwner').doc(phoneNumber);
+  // ✅ Get the first truckOwner document
+  DocumentSnapshot truckOwnerDoc = truckOwnerSnapshot.docs.first;
+  String truckOwnerId = truckOwnerDoc.id; // The existing truckOwner ID
 
-  // ✅ Ensure the truckOwner document exists
-  DocumentSnapshot truckOwnerDoc = await truckOwnerDocRef.get();
-  if (!truckOwnerDoc.exists) {
-    await truckOwnerDocRef.set({'createdAt': FieldValue.serverTimestamp()});
-  }
+  // ✅ Reference the `addedTrucks` subcollection inside this existing truckOwner
+  CollectionReference addedTrucksRef = userDocRef
+      .collection('truckOwners')
+      .doc(truckOwnerId) // Using existing truckOwner
+      .collection('addedTrucks');
 
-  // ✅ Reference the `addedTrucks` collection
-  CollectionReference addedTrucksRef =
-      truckOwnerDocRef.collection('addedTrucks');
-
-  // ✅ Add the new truck
+  // ✅ Add the truck to the correct subcollection
   await addedTrucksRef.add({
     'truckNumber': truckNumber,
     'truckType': truckType,

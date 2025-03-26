@@ -67,25 +67,119 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
 class AvailableTrucksScreen extends StatelessWidget {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  /// 🔹 Fetch trucks from nested subcollection
-  Stream<QuerySnapshot> getTrucksStream() {
+  Future<String?> getPhoneNumberFromEmail(String email) async {
+    try {
+      QuerySnapshot userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        return userQuery.docs.first.id;
+      } else {
+        print("❌ ERROR: No user found with email: $email");
+        return null;
+      }
+    } catch (e) {
+      print("❌ ERROR fetching phone number: $e");
+      return null;
+    }
+  }
+
+  Stream<QuerySnapshot> getTrucksStream() async* {
     User? currentUser = _auth.currentUser;
 
     if (currentUser == null || currentUser.email == null) {
-      print("❌ ERROR: User is not logged in or email missing!");
-      return const Stream.empty();
+      print("❌ ERROR: User not logged in or email missing!");
+      yield* Stream.empty();
+      return;
     }
 
     String email = currentUser.email!;
-    print("📌 Fetching trucks for email: $email");
+    String? phoneNumber = await getPhoneNumberFromEmail(email);
+    if (phoneNumber == null) {
+      print("❌ ERROR: Could not find phone number for this email!");
+      yield* Stream.empty();
+      return;
+    }
 
-    return FirebaseFirestore.instance
+    yield* FirebaseFirestore.instance
         .collection('users')
-        .doc(email)
+        .doc(phoneNumber)
         .collection('truckOwners')
-        .doc(email)
-        .collection('addedTrucks')
-        .snapshots();
+        .snapshots()
+        .asyncExpand((truckOwnerSnapshot) async* {
+      if (truckOwnerSnapshot.docs.isEmpty) {
+        yield* Stream.empty();
+        return;
+      }
+
+      String truckOwnerId = truckOwnerSnapshot.docs.first.id;
+
+      yield* FirebaseFirestore.instance
+          .collection('users')
+          .doc(phoneNumber)
+          .collection('truckOwners')
+          .doc(truckOwnerId)
+          .collection('addedTrucks')
+          .snapshots();
+    });
+  }
+
+  /// 🗑 **Remove Truck Function**
+  Future<void> removeTruck(String truckId) async {
+    User? currentUser = _auth.currentUser;
+    if (currentUser == null || currentUser.email == null) return;
+
+    String? phoneNumber = await getPhoneNumberFromEmail(currentUser.email!);
+    if (phoneNumber == null) return;
+
+    try {
+      var truckOwnerQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(phoneNumber)
+          .collection('truckOwners')
+          .get();
+
+      if (truckOwnerQuery.docs.isNotEmpty) {
+        String truckOwnerId = truckOwnerQuery.docs.first.id;
+
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(phoneNumber)
+            .collection('truckOwners')
+            .doc(truckOwnerId)
+            .collection('addedTrucks')
+            .doc(truckId)
+            .delete();
+
+        print("✅ Truck removed successfully!");
+      }
+    } catch (e) {
+      print("❌ ERROR removing truck: $e");
+    }
+  }
+
+  /// ⚠️ **Delete Confirmation Dialog**
+  Future<bool> showDeleteConfirmationDialog(BuildContext context) async {
+    return await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text("Delete Truck"),
+            content: Text("Are you sure you want to delete this truck?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text("Cancel"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text("Delete", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override
@@ -145,6 +239,7 @@ class AvailableTrucksScreen extends StatelessWidget {
             itemCount: trucks.length,
             itemBuilder: (context, index) {
               var truck = trucks[index];
+              String truckId = truck.id;
 
               return Card(
                 elevation: 3,
@@ -155,13 +250,16 @@ class AvailableTrucksScreen extends StatelessWidget {
                 child: ListTile(
                   leading:
                       Icon(Icons.local_shipping, color: Colors.blue.shade900),
-                  title: Text(
-                    truck['truckNumber'] ?? 'Unknown',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  title: Text(truck['truckNumber'] ?? 'Unknown'),
                   subtitle: Text(
-                    "Type: ${truck['truckType'] ?? 'N/A'} | Capacity: ${truck['capacity'] ?? 'N/A'} tons",
-                    style: TextStyle(color: Colors.grey.shade700),
+                      "Type: ${truck['truckType']} | Capacity: ${truck['capacity']} tons"),
+                  trailing: IconButton(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    onPressed: () async {
+                      bool confirm =
+                          await showDeleteConfirmationDialog(context);
+                      if (confirm) await removeTruck(truckId);
+                    },
                   ),
                 ),
               );
