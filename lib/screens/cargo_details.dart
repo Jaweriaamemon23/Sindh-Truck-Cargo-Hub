@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CargoDetailsScreen extends StatefulWidget {
   @override
@@ -6,224 +8,265 @@ class CargoDetailsScreen extends StatefulWidget {
 }
 
 class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
-  // Controllers for input fields
-  final TextEditingController _weightController = TextEditingController(text: "0");
-  final TextEditingController _distanceController = TextEditingController(text: "0");
+  final TextEditingController _weightController =
+      TextEditingController(text: "0");
+  final TextEditingController _distanceController =
+      TextEditingController(text: "0");
 
-  // Dropdown selections
   String? selectedCargoType;
   String? selectedStartCity;
   String? selectedEndCity;
 
-  final List<String> cargoTypes = ['General Goods', 'Fragile Items', 'Perishable Goods'];
+  final List<String> cargoTypes = [
+    'General Goods',
+    'Fragile Items',
+    'Perishable Goods'
+  ];
   final List<String> cities = ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana'];
 
-  double? estimatedPrice; // Variable to store the estimated price
+  double? estimatedPrice;
 
-  // Function to calculate estimated price
   void _calculatePrice() {
     int weight = int.tryParse(_weightController.text) ?? 0;
     int distance = int.tryParse(_distanceController.text) ?? 0;
 
     if (weight > 0 && distance > 0) {
       setState(() {
-        estimatedPrice = (weight * 2.5) + (distance * 1.5); // Sample formula
+        estimatedPrice = (weight * 2.5) + (distance * 1.5);
       });
     } else {
       setState(() {
-        estimatedPrice = null; // Reset price if input is invalid
+        estimatedPrice = null;
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter valid weight and distance')),
+        SnackBar(
+            content: Text('Please enter valid weight and distance'),
+            backgroundColor: Colors.red),
       );
     }
+  }
+
+  Future<void> _requestBooking() async {
+    User? user = FirebaseAuth.instance.currentUser; // Get logged-in user
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('You must be logged in to request a booking'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (selectedCargoType == null ||
+        selectedStartCity == null ||
+        selectedEndCity == null ||
+        estimatedPrice == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please complete all details'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    await FirebaseFirestore.instance.collection('bookings').add({
+      'cargoType': selectedCargoType,
+      'startCity': selectedStartCity,
+      'endCity': selectedEndCity,
+      'weight': _weightController.text,
+      'distance': _distanceController.text,
+      'price': estimatedPrice,
+      'email': user.email, // Store user email in Firestore
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Booking Requested Successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    setState(() {
+      selectedCargoType = null;
+      selectedStartCity = null;
+      selectedEndCity = null;
+      _weightController.text = "0";
+      _distanceController.text = "0";
+      estimatedPrice = null;
+    });
+  }
+
+  Widget _buildDropdown(String label, String? selectedValue,
+      List<String> options, Function(String?) onChanged) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+        SizedBox(height: 5),
+        DropdownButtonFormField<String>(
+          value: selectedValue,
+          decoration: InputDecoration(
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
+          items: options.map((option) {
+            return DropdownMenuItem<String>(
+              value: option,
+              child: Text(option),
+            );
+          }).toList(),
+          onChanged: onChanged,
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add Cargo Details')),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: Text('Add Cargo Details', style: TextStyle(color: Colors.white)),
+        backgroundColor: Colors.blue,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cargo Weight Input with Increment/Decrement Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Cargo Weight (kg)', style: TextStyle(fontSize: 16)),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove_circle, color: Colors.red),
-                      onPressed: () {
-                        int weight = int.tryParse(_weightController.text) ?? 1;
-                        if (weight > 1) {
-                          setState(() {
-                            _weightController.text = (weight - 1).toString();
-                          });
-                        }
-                      },
-                    ),
-                    SizedBox(
-                      width: 60,
-                      child: TextField(
-                        controller: _weightController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(border: OutlineInputBorder()),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add_circle, color: Colors.green),
-                      onPressed: () {
-                        int weight = int.tryParse(_weightController.text) ?? 0;
-                        setState(() {
-                          _weightController.text = (weight + 1).toString();
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            SizedBox(height: 10),
-
-            // Cargo Type Dropdown
-            DropdownButtonFormField<String>(
-              value: selectedCargoType,
-              decoration: InputDecoration(
-                labelText: 'Cargo Type',
-                border: OutlineInputBorder(),
-              ),
-              items: cargoTypes.map((type) {
-                return DropdownMenuItem<String>(
-                  value: type,
-                  child: Text(type),
-                );
-              }).toList(),
-              onChanged: (newValue) {
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildWeightInput(),
+              SizedBox(height: 10),
+              _buildDropdown('Cargo Type', selectedCargoType, cargoTypes,
+                  (newValue) {
                 setState(() {
                   selectedCargoType = newValue;
                 });
-              },
-            ),
-            SizedBox(height: 10),
-
-            // Start City Dropdown
-            DropdownButtonFormField<String>(
-              value: selectedStartCity,
-              decoration: InputDecoration(
-                labelText: 'Start City',
-                border: OutlineInputBorder(),
-              ),
-              items: cities.map((city) {
-                return DropdownMenuItem<String>(
-                  value: city,
-                  child: Text(city),
-                );
-              }).toList(),
-              onChanged: (newValue) {
+              }),
+              SizedBox(height: 10),
+              _buildDropdown('Start City', selectedStartCity, cities,
+                  (newValue) {
                 setState(() {
                   selectedStartCity = newValue;
                 });
-              },
-            ),
-            SizedBox(height: 10),
-
-            // End City Dropdown
-            DropdownButtonFormField<String>(
-              value: selectedEndCity,
-              decoration: InputDecoration(
-                labelText: 'End City',
-                border: OutlineInputBorder(),
-              ),
-              items: cities.map((city) {
-                return DropdownMenuItem<String>(
-                  value: city,
-                  child: Text(city),
-                );
-              }).toList(),
-              onChanged: (newValue) {
+              }),
+              SizedBox(height: 10),
+              _buildDropdown('End City', selectedEndCity, cities, (newValue) {
                 setState(() {
                   selectedEndCity = newValue;
                 });
-              },
-            ),
-            SizedBox(height: 10),
-
-            // Distance Input with Increment/Decrement Buttons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Distance (km)', style: TextStyle(fontSize: 16)),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.remove_circle, color: Colors.red),
-                      onPressed: () {
-                        int distance = int.tryParse(_distanceController.text) ?? 1;
-                        if (distance > 1) {
-                          setState(() {
-                            _distanceController.text = (distance - 1).toString();
-                          });
-                        }
-                      },
+              }),
+              SizedBox(height: 10),
+              _buildDistanceInput(),
+              SizedBox(height: 20),
+              Center(
+                child: ElevatedButton(
+                  onPressed: _calculatePrice,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    SizedBox(
-                      width: 60,
-                      child: TextField(
-                        controller: _distanceController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        decoration: InputDecoration(border: OutlineInputBorder()),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add_circle, color: Colors.green),
-                      onPressed: () {
-                        int distance = int.tryParse(_distanceController.text) ?? 0;
-                        setState(() {
-                          _distanceController.text = (distance + 1).toString();
-                        });
-                      },
-                    ),
-                  ],
+                  ),
+                  child:
+                      Text('Calculate Price', style: TextStyle(fontSize: 16)),
                 ),
-              ],
-            ),
-            SizedBox(height: 20),
-
-            // Calculate Price Button
-            Center(
-              child: ElevatedButton(
-                onPressed: _calculatePrice,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Blue button color
-                  foregroundColor: Colors.white, // Text color
-                  padding: EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              ),
+              SizedBox(height: 20),
+              if (estimatedPrice != null)
+                Center(
+                  child: Column(
+                    children: [
+                      Text(
+                        'Estimated Price: Rs. ${estimatedPrice!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue),
+                      ),
+                      SizedBox(height: 10),
+                      ElevatedButton(
+                        onPressed: _requestBooking,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                              horizontal: 40, vertical: 15),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: Text('Request Booking',
+                            style: TextStyle(fontSize: 16)),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text('Calculate Price', style: TextStyle(fontSize: 16)),
-              ),
-            ),
-            SizedBox(height: 20),
-
-            // Display Estimated Price
-            if (estimatedPrice != null)
-              Center(
-                child: Text(
-                  'Estimated Price: Rs. ${estimatedPrice!.toStringAsFixed(2)}',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildWeightInput() {
+    return _buildInputWithButtons('Cargo Weight (kg)', _weightController);
+  }
+
+  Widget _buildDistanceInput() {
+    return _buildInputWithButtons('Distance (km)', _distanceController);
+  }
+
+  Widget _buildInputWithButtons(
+      String label, TextEditingController controller) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.remove_circle, color: Colors.red),
+              onPressed: () {
+                int value = int.tryParse(controller.text) ?? 1;
+                if (value > 1) {
+                  setState(() {
+                    controller.text = (value - 1).toString();
+                  });
+                }
+              },
+            ),
+            SizedBox(
+              width: 60,
+              child: TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.add_circle, color: Colors.green),
+              onPressed: () {
+                int value = int.tryParse(controller.text) ?? 0;
+                setState(() {
+                  controller.text = (value + 1).toString();
+                });
+              },
+            ),
+          ],
+        ),
+      ],
     );
   }
 }

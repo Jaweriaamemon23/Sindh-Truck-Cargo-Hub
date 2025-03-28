@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'cargo_details.dart'; // Import the Cargo Details Screen
+import 'cargo_details.dart';
 
 class CargoTransporterDashboard extends StatefulWidget {
   @override
@@ -13,11 +13,8 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
 
   // Screens for each tab
   final List<Widget> _screens = [
-    AvailableCargoScreen(), // ✅ Show Available Cargo Tab
-    Center(child: Text('Track Shipment')), // Placeholder for Tracking
-    Center(
-        child: Text(
-            'Send Availability Notifications')), // Placeholder for Notifications
+    MyCargoScreen(), // ✅ My Cargo Tab
+    AvailableTrucksScreen(), // ✅ Available Trucks Tab
   ];
 
   void _onItemTapped(int index) {
@@ -51,40 +48,37 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
         unselectedItemColor: Colors.white60,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
-            label: 'Available Cargo',
+            icon: Icon(Icons.inbox),
+            label: 'My Cargo',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.directions_boat),
-            label: 'Track Shipment',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Send Notifications',
+            icon: Icon(Icons.local_shipping),
+            label: 'Available Trucks',
           ),
         ],
       ),
 
-      // **Floating Action Button for Adding Cargo Details**
+      // Floating Action Button for Adding Cargo Details
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade900,
         onPressed: () {
+          // Navigate to the Cargo Details Input screen
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => CargoDetailsScreen()),
           );
         },
-        child: Icon(Icons.local_shipping, size: 28, color: Colors.white),
-        tooltip: 'Add Cargo Details',
+        child: Icon(Icons.add, size: 28, color: Colors.white),
+        tooltip: 'Add Cargo',
       ),
     );
   }
 }
 
 // ─────────────────────────────────────────────────────────────
-// ✅ **Available Cargo Screen - Displays Registered Truck Owners**
+// ✅ **My Cargo Screen - Displays Cargo Added by Transporter**
 // ─────────────────────────────────────────────────────────────
-class AvailableCargoScreen extends StatelessWidget {
+class MyCargoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -92,7 +86,74 @@ class AvailableCargoScreen extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            "Available Truck Owners",
+            "My Cargo",
+            style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900),
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('cargoRequests') // ✅ Fetch Transporter's Cargo
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text("No cargo added yet."),
+                  );
+                }
+
+                var cargoList = snapshot.data!.docs;
+
+                return ListView.builder(
+                  itemCount: cargoList.length,
+                  itemBuilder: (context, index) {
+                    var cargo = cargoList[index];
+                    return Card(
+                      elevation: 3,
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: Icon(Icons.inventory, color: Colors.blue.shade900),
+                        title: Text(cargo['cargoType'],
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("From: ${cargo['startCity']} → To: ${cargo['endCity']}"),
+                        trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue.shade900),
+                        onTap: () {
+                          // Navigate to Cargo Details Page if needed
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ✅ **Available Trucks Screen - Lists Available Truck Owners**
+// ─────────────────────────────────────────────────────────────
+class AvailableTrucksScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            "Available Trucks",
             style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -103,8 +164,7 @@ class AvailableCargoScreen extends StatelessWidget {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
-                  .where('userType',
-                      isEqualTo: 'Truck Owner') // ✅ Fetch only Truck Owners
+                  .where('userType', isEqualTo: 'Truck Owner') // ✅ Fetch Truck Owners
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -112,7 +172,7 @@ class AvailableCargoScreen extends StatelessWidget {
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
-                    child: Text("No available truck owners found."),
+                    child: Text("No available trucks found."),
                   );
                 }
 
@@ -129,15 +189,13 @@ class AvailableCargoScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
-                        leading: Icon(Icons.local_shipping,
-                            color: Colors.blue.shade900),
+                        leading: Icon(Icons.local_shipping, color: Colors.blue.shade900),
                         title: Text(owner['name'],
                             style: TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text("Phone: ${owner['phone']}"),
-                        trailing: Icon(Icons.arrow_forward_ios,
-                            color: Colors.blue.shade900),
+                        trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue.shade900),
                         onTap: () {
-                          // You can navigate to a truck owner details page here
+                          // Navigate to truck details page if needed
                         },
                       ),
                     );
