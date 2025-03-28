@@ -1,64 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class AvailableTrucksScreen extends StatelessWidget {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  Stream<QuerySnapshot> getTrucksStream() {
-    return FirebaseFirestore.instance
-        .collection('trucks')
-        .where('status', isEqualTo: 'available')
-        .snapshots();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: getTrucksStream(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text("❌ Error loading trucks!"));
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            "Available Trucks",
+            style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.blue.shade900),
+          ),
+          SizedBox(height: 16),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('userType', isEqualTo: 'Truck Owner') // ✅ Fetch Truck Owners
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text("No available trucks found."),
+                  );
+                }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return Center(
-              child: Text(
-                "No available trucks.",
-                style: TextStyle(fontSize: 18, color: Colors.blue.shade900),
-              ),
-            );
-          }
+                var truckOwners = snapshot.data!.docs;
 
-          var trucks = snapshot.data!.docs;
-
-          return ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: trucks.length,
-            itemBuilder: (context, index) {
-              var truck = trucks[index];
-
-              return Card(
-                elevation: 3,
-                margin: EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ListTile(
-                  leading:
-                      Icon(Icons.local_shipping, color: Colors.blue.shade900),
-                  title: Text(truck['truckNumber'] ?? 'Unknown'),
-                  subtitle: Text(
-                      "Type: ${truck['truckType']} | Capacity: ${truck['capacity']} tons"),
-                ),
-              );
-            },
-          );
-        },
+                return ListView.builder(
+                  itemCount: truckOwners.length,
+                  itemBuilder: (context, index) {
+                    var owner = truckOwners[index];
+                    return Card(
+                      elevation: 3,
+                      margin: EdgeInsets.symmetric(vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: ListTile(
+                        leading: Icon(Icons.local_shipping, color: Colors.blue.shade900),
+                        title: Text(owner['name'],
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        subtitle: Text("Phone: ${owner['phone']}"),
+                        trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue.shade900),
+                        onTap: () {
+                          // Navigate to truck details page if needed
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

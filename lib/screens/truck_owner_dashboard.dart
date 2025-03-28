@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'book_cargo.dart';
-import 'my_trucks.dart'; // ✅ Import the separated AvailableTrucksScreen
+import 'my_trucks.dart';
+import 'login_screen.dart';
 
 class TruckOwnerDashboard extends StatefulWidget {
   @override
@@ -25,12 +25,27 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
     });
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()), // Redirect to Login
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text('Truck Owner Dashboard', style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue.shade800,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
