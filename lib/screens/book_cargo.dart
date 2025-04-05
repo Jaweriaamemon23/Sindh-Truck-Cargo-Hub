@@ -9,14 +9,17 @@ class BookCargoScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Book Cargo Requests", style: TextStyle(color: Colors.white)),
+        title:
+            Text("Book Cargo Requests", style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return Center(child: Text("❌ Error loading bookings!"));
-          if (snapshot.connectionState == ConnectionState.waiting) return Center(child: CircularProgressIndicator());
+          if (snapshot.hasError)
+            return Center(child: Text("❌ Error loading bookings!"));
+          if (snapshot.connectionState == ConnectionState.waiting)
+            return Center(child: CircularProgressIndicator());
 
           var bookings = snapshot.data?.docs ?? [];
 
@@ -25,10 +28,12 @@ class BookCargoScreen extends StatelessWidget {
             var data = doc.data() as Map<String, dynamic>;
             List<dynamic> rejectedBy = data['rejectedBy'] ?? [];
             List<dynamic> removedBy = data['removedBy'] ?? [];
-            return !(rejectedBy.contains(currentUser?.uid) || removedBy.contains(currentUser?.uid));
+            return !(rejectedBy.contains(currentUser?.uid) ||
+                removedBy.contains(currentUser?.uid));
           }).toList();
 
-          if (bookings.isEmpty) return Center(child: Text("No bookings available."));
+          if (bookings.isEmpty)
+            return Center(child: Text("No bookings available."));
 
           return ListView.builder(
             padding: EdgeInsets.all(16),
@@ -39,15 +44,20 @@ class BookCargoScreen extends StatelessWidget {
 
               String status = bookingData['status'] ?? 'Pending';
               String acceptedBy = bookingData['acceptedBy'] ?? '';
+              String requestedBy = bookingData['requestedBy'] ??
+                  ''; // Fetch the requestedBy email
 
               // If another truck owner has accepted, show "Not Available" for others
-              bool isAcceptedByAnother = status == "Accepted" && acceptedBy != currentUser?.uid;
-              String displayStatus = isAcceptedByAnother ? "Not Available" : status;
+              bool isAcceptedByAnother =
+                  status == "Accepted" && acceptedBy != currentUser?.uid;
+              String displayStatus =
+                  isAcceptedByAnother ? "Not Available" : status;
 
               return Card(
                 elevation: 3,
                 margin: EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 child: Padding(
                   padding: EdgeInsets.all(12),
                   child: Column(
@@ -55,12 +65,14 @@ class BookCargoScreen extends StatelessWidget {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.local_shipping, color: Colors.blue, size: 30),
+                          Icon(Icons.local_shipping,
+                              color: Colors.blue, size: 30),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               "Cargo: ${bookingData['cargoType'] ?? 'N/A'}",
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold),
                             ),
                           ),
                         ],
@@ -89,13 +101,15 @@ class BookCargoScreen extends StatelessWidget {
                               onPressed: () => _acceptCargo(bookingId),
                               icon: Icon(Icons.check, color: Colors.white),
                               label: Text("Accept"),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green),
                             ),
                             ElevatedButton.icon(
                               onPressed: () => _rejectCargo(bookingId),
                               icon: Icon(Icons.cancel, color: Colors.white),
                               label: Text("Reject"),
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red),
                             ),
                           ],
                         ),
@@ -107,7 +121,8 @@ class BookCargoScreen extends StatelessWidget {
                             onPressed: () => _removeCargo(bookingId),
                             icon: Icon(Icons.delete, color: Colors.white),
                             label: Text("Remove"),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                            style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.grey),
                           ),
                         ),
                     ],
@@ -140,7 +155,8 @@ class BookCargoScreen extends StatelessWidget {
     if (currentUser == null) return;
 
     FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]), // Add user to rejected list
+      'rejectedBy': FieldValue.arrayUnion(
+          [currentUser!.uid]), // Add user to rejected list
     }).then((_) {
       print("🚫 Cargo Rejected!");
     }).catchError((error) {
@@ -153,7 +169,8 @@ class BookCargoScreen extends StatelessWidget {
     if (currentUser == null) return;
 
     FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'removedBy': FieldValue.arrayUnion([currentUser!.uid]), // Add user to removed list
+      'removedBy':
+          FieldValue.arrayUnion([currentUser!.uid]), // Add user to removed list
     }).then((_) {
       print("🚫 Cargo Removed from Dashboard!");
     }).catchError((error) {

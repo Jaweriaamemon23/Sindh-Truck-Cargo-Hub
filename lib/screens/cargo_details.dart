@@ -98,6 +98,8 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       _distanceController.text = "0";
       estimatedPrice = null;
     });
+    // 👇 Navigate back to dashboard/main screen
+    Navigator.pop(context);
   }
 
   Widget _buildDropdown(String label, String? selectedValue,
