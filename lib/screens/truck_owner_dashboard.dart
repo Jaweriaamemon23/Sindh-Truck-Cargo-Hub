@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sindh_truck_cargo_hub/screens/truck_owner_reviews.dart';
 import 'book_cargo.dart';
 import 'my_trucks.dart';
 import 'login_screen.dart';
@@ -14,8 +15,10 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
 
   final List<Widget> _screens = [
     MyTrucksScreen(), // ✅ Now calling it as a separate screen
-    Center(child: Text('View Notifications', style: TextStyle(fontSize: 20))),
     BookCargoScreen(),
+    TruckOwnerReviewsScreen(), // ✅ Reviews Screen
+    Center(child: Text('View Notifications', style: TextStyle(fontSize: 20))),
+   
   ];
 
   void _onItemTapped(int index) {
@@ -60,13 +63,18 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
             icon: Icon(Icons.local_shipping),
             label: 'My Trucks',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notifications',
-          ),
+          
           BottomNavigationBarItem(
             icon: Icon(Icons.book),
             label: 'Book Cargo',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.star),
+            label: 'Reviews',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
         ],
       ),
