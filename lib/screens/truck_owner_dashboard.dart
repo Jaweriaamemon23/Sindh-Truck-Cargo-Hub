@@ -14,9 +14,8 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
 
   final List<Widget> _screens = [
     MyTrucksScreen(), // ✅ Now calling it as a separate screen
-    Center(child: Text('Manage Vehicles', style: TextStyle(fontSize: 20))),
-    BookCargoScreen(),
     Center(child: Text('View Notifications', style: TextStyle(fontSize: 20))),
+    BookCargoScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -29,7 +28,8 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => LoginScreen()), // Redirect to Login
+      MaterialPageRoute(
+          builder: (context) => LoginScreen()), // Redirect to Login
     );
   }
 
@@ -37,7 +37,8 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Truck Owner Dashboard', style: TextStyle(color: Colors.white)),
+        title: Text('Truck Owner Dashboard',
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue.shade800,
         actions: [
           IconButton(
@@ -60,16 +61,12 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
             label: 'My Trucks',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_box),
-            label: 'Manage Vehicles',
+            icon: Icon(Icons.notifications),
+            label: 'Notifications',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book),
             label: 'Book Cargo',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: 'Notifications',
           ),
         ],
       ),
