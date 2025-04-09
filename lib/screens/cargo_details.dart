@@ -28,6 +28,16 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
 
   double? estimatedPrice;
 
+  // Predefined list of distances with city-to-city info
+  final List<Map<String, dynamic>> predefinedDistances = [
+    {"route": "Karachi → Hyderabad", "distance": 167},
+    {"route": "Karachi → Larkana", "distance": 380},
+    {"route": "Karachi → Sukkur", "distance": 450},
+    {"route": "Hyderabad → Larkana", "distance": 210},
+    {"route": "Hyderabad → Sukkur", "distance": 280},
+    {"route": "Larkana → Sukkur", "distance": 125},
+  ];
+
   void _calculatePrice() {
     int weight = int.tryParse(_weightController.text) ?? 0;
     int distance = int.tryParse(_distanceController.text) ?? 0;
@@ -166,6 +176,41 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     );
   }
 
+  // Function to show distance chart dialog with updated list
+  void _showDistanceChart() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Select Distance'),
+          content: SingleChildScrollView(
+            child: Column(
+              children: predefinedDistances.map((distanceData) {
+                return ListTile(
+                  title: Text(
+                      '${distanceData["route"]} : ${distanceData["distance"]} km'),
+                  onTap: () {
+                    setState(() {
+                      _distanceController.text =
+                          distanceData["distance"].toString();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -263,7 +308,32 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
   }
 
   Widget _buildDistanceInput() {
-    return _buildInputWithButtons('Distance (km)', _distanceController);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Distance (km)',
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+        SizedBox(height: 5),
+        Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.list, color: Colors.blue),
+              onPressed: _showDistanceChart, // Show distance chart when clicked
+            ),
+            SizedBox(
+              width: 60,
+              child: TextField(
+                controller: _distanceController,
+                keyboardType: TextInputType.number,
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(border: OutlineInputBorder()),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildInputWithButtons(
