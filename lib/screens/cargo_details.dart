@@ -94,7 +94,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     }
 
     var ownerData = ownerSnapshot.data() as Map<String, dynamic>?;
-    if (ownerData == null || ownerData['role'] != 'Business Owner') {
+    if (ownerData == null || ownerData['userType'] != 'Business Owner') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('❌ This UID does not belong to a Business Owner.'),
