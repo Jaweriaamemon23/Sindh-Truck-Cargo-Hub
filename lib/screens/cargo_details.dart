@@ -12,6 +12,8 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       TextEditingController(text: "0");
   final TextEditingController _distanceController =
       TextEditingController(text: "0");
+  final TextEditingController _businessOwnerIdController =
+      TextEditingController(); // ✅ For business owner ID
 
   String? selectedCargoType;
   String? selectedStartCity;
@@ -47,7 +49,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
   }
 
   Future<void> _requestBooking() async {
-    User? user = FirebaseAuth.instance.currentUser; // Get logged-in user
+    User? user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,7 +64,8 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     if (selectedCargoType == null ||
         selectedStartCity == null ||
         selectedEndCity == null ||
-        estimatedPrice == null) {
+        estimatedPrice == null ||
+        _businessOwnerIdController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Please complete all details'),
@@ -72,6 +75,36 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       return;
     }
 
+    String businessOwnerId = _businessOwnerIdController.text.trim();
+
+    // ✅ Validate Business Owner UID & Role
+    DocumentSnapshot ownerSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(businessOwnerId)
+        .get();
+
+    if (!ownerSnapshot.exists) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ No user found with this ID.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    var ownerData = ownerSnapshot.data() as Map<String, dynamic>?;
+    if (ownerData == null || ownerData['role'] != 'Business Owner') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ This UID does not belong to a Business Owner.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ Store booking
     await FirebaseFirestore.instance.collection('bookings').add({
       'cargoType': selectedCargoType,
       'startCity': selectedStartCity,
@@ -79,8 +112,11 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       'weight': _weightController.text,
       'distance': _distanceController.text,
       'price': estimatedPrice,
-      'email': user.email, // Store user email in Firestore
+      'email': user.email,
       'timestamp': FieldValue.serverTimestamp(),
+      'transporterId': user.uid,
+      'businessOwnerId': businessOwnerId, // ✅ Store for tracking
+      'status': 'Pending',
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -96,9 +132,10 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       selectedEndCity = null;
       _weightController.text = "0";
       _distanceController.text = "0";
+      _businessOwnerIdController.clear();
       estimatedPrice = null;
     });
-    // 👇 Navigate back to dashboard/main screen
+
     Navigator.pop(context);
   }
 
@@ -166,6 +203,8 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
               }),
               SizedBox(height: 10),
               _buildDistanceInput(),
+              SizedBox(height: 10),
+              _buildBusinessOwnerIdField(),
               SizedBox(height: 20),
               Center(
                 child: ElevatedButton(
@@ -267,6 +306,26 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
               },
             ),
           ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBusinessOwnerIdField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Enter Business Owner ID (UID provided by owner)",
+            style: TextStyle(
+                fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
+        SizedBox(height: 5),
+        TextField(
+          controller: _businessOwnerIdController,
+          decoration: InputDecoration(
+            hintText: 'Business Owner UID',
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          ),
         ),
       ],
     );
