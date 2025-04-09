@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'reviews.dart';
 
 class MyCargoScreen extends StatefulWidget {
   @override
@@ -9,181 +10,113 @@ class MyCargoScreen extends StatefulWidget {
 
 class _MyCargoScreenState extends State<MyCargoScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final CargoReviewSystem _reviewSystem = CargoReviewSystem();
 
   Stream<QuerySnapshot> getCargoStream() {
     User? currentUser = _auth.currentUser;
-    if (currentUser == null) {
-      return Stream.empty();
-    }
-
-    // Debugging: Print the current user's email to see if it's correct
-    print("Current user's email: ${currentUser.email}");
+    if (currentUser == null) return Stream.empty();
 
     return FirebaseFirestore.instance
-        .collection('bookings') // Correct collection name is 'bookings'
-        .where('email',
-            isEqualTo: currentUser.email) // Use 'email' field to filter
+        .collection('bookings')
+        .where('email', isEqualTo: currentUser.email)
         .snapshots();
   }
 
-  void _showReviewDialog(BuildContext context, String bookingId) {
-    double rating = 3.0;
-    TextEditingController reviewController = TextEditingController();
-
+  void _showTruckOwnerDetails(String status, String acceptedBy) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text("Rate Your Experience"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text("How was your delivery experience?"),
-            SizedBox(height: 10),
-            StatefulBuilder(
-              builder: (context, setState) => Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return IconButton(
-                    icon: Icon(
-                      index < rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 30,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        rating = index + 1;
-                      });
-                    },
-                  );
-                }),
+      builder: (context) {
+        return AlertDialog(
+          title: Text('$status Info'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "${status == 'Delivered' ? 'Delivered by:' : 'Accepted by:'}",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-            ),
-            SizedBox(height: 10),
-            TextField(
-              controller: reviewController,
-              decoration: InputDecoration(
-                hintText: "Add your comments (optional)",
-                border: OutlineInputBorder(),
+              SizedBox(height: 4),
+              SelectableText(acceptedBy),
+              SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _showTruckOwnerReviews(acceptedBy);
+                },
+                icon: Icon(Icons.rate_review),
+                label: Text("Show Reviews"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade800,
+                  foregroundColor: Colors.white,
+                ),
               ),
-              maxLines: 3,
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Close"),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              // Submit review to Firestore
-              _submitReview(bookingId, rating, reviewController.text);
-              Navigator.pop(context);
-            },
-            child: Text("Submit"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade800,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  void _submitReview(String bookingId, double rating, String comment) {
-    User? currentUser = _auth.currentUser;
-    if (currentUser == null) return;
+  void _showTruckOwnerReviews(String truckOwnerEmail) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Truck Owner Reviews'),
+          content: Container(
+            width: double.maxFinite,
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('reviews')
+                  .where('truckOwnerEmail', isEqualTo: truckOwnerEmail)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
 
-    // For debugging
-    print("⭐ Starting review submission for booking: $bookingId");
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Text('No reviews found for this truck owner.');
+                }
 
-    // First get the booking details to determine the truck owner's info
-    FirebaseFirestore.instance
-        .collection('bookings')
-        .doc(bookingId)
-        .get()
-        .then((bookingDoc) {
-      if (!bookingDoc.exists) {
-        print("❌ Booking document not found!");
-        return;
-      }
+                var reviews = snapshot.data!.docs;
 
-      var bookingData = bookingDoc.data();
-      // Get acceptedBy (truck owner ID) from the booking
-      String? acceptedById = bookingData?['acceptedBy'];
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: reviews.length,
+                  itemBuilder: (context, index) {
+                    var review = reviews[index].data() as Map<String, dynamic>;
+                    double rating = review['rating']?.toDouble() ?? 0.0;
+                    String comment = review['review'] ?? '';
+                    Timestamp ts = review['timestamp'];
+                    DateTime date = ts.toDate();
 
-      if (acceptedById == null) {
-        print("❌ acceptedBy field not found in booking document!");
-        return;
-      }
-
-      print("✅ Found acceptedBy ID: $acceptedById, now fetching their email");
-
-      // Get truck owner's email from users collection using the acceptedBy ID
-     FirebaseFirestore.instance
-    .collection('bookings')
-    .doc(bookingId)
-    .get()
-    .then((bookingDoc) {
-  if (!bookingDoc.exists) {
-    print("❌ Booking document not found!");
-    return;
-  }
-
-  var bookingData = bookingDoc.data();
-
-  // 🚨 Get the truck owner's email directly from the 'acceptedBy' field
-  String? truckOwnerEmail = bookingData?['acceptedBy'];
-
-  if (truckOwnerEmail == null) {
-    print("❌ acceptedBy (email) not found in booking document!");
-    return;
-  }
-
-  print("✅ Found truck owner email: $truckOwnerEmail");
-
-        // Now add the review to Firestore
-        FirebaseFirestore.instance.collection('reviews').add({
-          'cargoTransporterEmail': currentUser.email,
-          'rating': rating,
-          'review': comment,
-          'timestamp': FieldValue.serverTimestamp(),
-          'truckOwnerEmail': truckOwnerEmail,
-          'bookingId': bookingId, // Keep for reference
-        }).then((_) {
-          print("✅ Review document created successfully!");
-
-          // Update booking with review status AND update state
-          FirebaseFirestore.instance
-              .collection('bookings')
-              .doc(bookingId)
-              .update({
-            'reviewed': true,
-          }).then((_) {
-            print("✅ Booking marked as reviewed");
-
-            // Force UI refresh
-            setState(() {
-              // This will trigger a rebuild with updated data
-            });
-
-            // Show success message
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text("Thank you for your feedback!"),
-                backgroundColor: Colors.green,
-              ),
-            );
-          });
-        }).catchError((error) {
-          print("❌ Error adding review: $error");
-        });
-      }).catchError((error) {
-        print("❌ Error getting truck owner document: $error");
-      });
-    }).catchError((error) {
-      print("❌ Error retrieving booking document: $error");
-    });
+                    return ListTile(
+                      leading: Icon(Icons.star, color: Colors.amber),
+                      title: Text("Rating: ${rating.toStringAsFixed(1)}"),
+                      subtitle: Text("$comment\n${date.toLocal()}"),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("Close"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -192,19 +125,18 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          // Header
           Text(
             "My Cargo",
             style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue.shade900),
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue.shade900,
+            ),
           ),
           SizedBox(height: 16),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  getCargoStream(), // Get the stream of cargo requests for the user
+              stream: getCargoStream(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -222,35 +154,30 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
 
                 var cargoList = snapshot.data!.docs;
 
-                // Log to inspect the document data
-                print(
-                    "Fetched cargo data: ${cargoList.map((doc) => doc.data()).toList()}");
-
                 return ListView.builder(
                   itemCount: cargoList.length,
                   itemBuilder: (context, index) {
                     var cargo = cargoList[index].data() as Map<String, dynamic>;
 
-                    // Log to see if all fields are properly available
-                    print("Cargo Document $index: $cargo");
-
-                    // Safely access the fields with default values
                     String cargoType = cargo['cargoType'] ?? 'Unknown';
                     String startCity = cargo['startCity'] ?? 'Unknown';
                     String endCity = cargo['endCity'] ?? 'Unknown';
-
-                    // Safely handle the 'weight' field by checking if it's null
                     double weight = (cargo['weight'] != null)
                         ? (cargo['weight'] is String
                             ? double.tryParse(cargo['weight']) ?? 0.0
                             : cargo['weight'].toDouble())
                         : 0.0;
-
-                    // Check if 'status' field exists, otherwise use default value
                     String status = cargo['status'] ?? 'Pending';
-
-                    // Check if cargo has been reviewed
                     bool isReviewed = cargo['reviewed'] ?? false;
+                    String? acceptedBy = cargo['acceptedBy'];
+
+                    Color statusColor = status == 'Booked'
+                        ? Colors.orange
+                        : (status == 'Accepted'
+                            ? Colors.blue
+                            : (status == 'Delivered'
+                                ? Colors.green
+                                : Colors.orange));
 
                     return Card(
                       elevation: 3,
@@ -265,22 +192,37 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 color: Colors.blue.shade900),
                             title: Text(cargoType),
                             subtitle: Text(
-                                "From: $startCity ➝ To: $endCity\nWeight: ${weight.toString()} tons"),
-                            trailing: Text(
-                              status,
-                              style: TextStyle(
-                                color: status == 'Booked'
-                                    ? Colors.orange
-                                    : (status == 'Accepted'
-                                        ? Colors.blue
-                                        : (status == 'Delivered'
-                                            ? Colors.green
-                                            : Colors.orange)),
-                                fontWeight: FontWeight.bold,
-                              ),
+                              "From: $startCity ➝ To: $endCity\n"
+                              "Weight: ${weight.toString()} tons",
                             ),
+                            trailing: acceptedBy != null
+                                ? InkWell(
+                                    onTap: () {
+                                      _showTruckOwnerDetails(
+                                          status, acceptedBy);
+                                    },
+                                    child: Chip(
+                                      backgroundColor: statusColor,
+                                      label: Text(
+                                        status,
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Chip(
+                                    backgroundColor: statusColor,
+                                    label: Text(
+                                      status,
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
                           ),
-                          // Add review button only if status is delivered and not yet reviewed
                           if (status == 'Delivered' && !isReviewed)
                             Padding(
                               padding: const EdgeInsets.only(
@@ -289,9 +231,13 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 alignment: Alignment.centerRight,
                                 child: ElevatedButton.icon(
                                   onPressed: () {
-                                    // Show review dialog
-                                    _showReviewDialog(
-                                        context, cargoList[index].id);
+                                    _reviewSystem.showReviewDialog(
+                                      context,
+                                      cargoList[index].id,
+                                      () {
+                                        setState(() {});
+                                      },
+                                    );
                                   },
                                   icon: Icon(Icons.star, color: Colors.amber),
                                   label: Text("Leave a Review"),
@@ -302,7 +248,6 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 ),
                               ),
                             ),
-                          // Show reviewed badge if the user has already left a review
                           if (status == 'Delivered' && isReviewed)
                             Padding(
                               padding: const EdgeInsets.only(

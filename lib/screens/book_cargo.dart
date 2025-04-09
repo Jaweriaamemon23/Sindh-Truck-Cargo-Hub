@@ -51,7 +51,7 @@ class BookCargoScreen extends StatelessWidget {
               String requestedByEmail = bookingData['email'] ?? '';
 
               bool isAcceptedByAnother =
-                  status == "Accepted" && acceptedBy != currentUser?.uid;
+                  status == "Accepted" && acceptedBy != currentUser?.email;
               String displayStatus =
                   isAcceptedByAnother ? "Not Available" : status;
 
@@ -144,7 +144,7 @@ class BookCargoScreen extends StatelessWidget {
                               ],
                             ),
                           if (status == "Accepted" &&
-                              acceptedBy == currentUser?.uid)
+                              acceptedBy == currentUser?.email)
                             Align(
                               alignment: Alignment.centerRight,
                               child: ElevatedButton.icon(
@@ -175,7 +175,7 @@ class BookCargoScreen extends StatelessWidget {
 
     FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
       'status': 'Accepted',
-      'acceptedBy': currentUser!.uid,
+      'acceptedBy': currentUser!.email,
     }).then((_) {
       print("✅ Cargo Accepted!");
     }).catchError((error) {
@@ -187,7 +187,7 @@ class BookCargoScreen extends StatelessWidget {
     if (currentUser == null) return;
 
     FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
+      'rejectedBy': FieldValue.arrayUnion([currentUser!.email]),
     }).then((_) {
       print("🚫 Cargo Rejected!");
     }).catchError((error) {
