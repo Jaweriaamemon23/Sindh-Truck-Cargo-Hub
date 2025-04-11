@@ -201,6 +201,22 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                       _showTruckOwnerDetails(
                                           status, acceptedBy);
                                     },
+                                    child: Container(
+                                      width: 120, // Constrained width
+                                      child: Chip(
+                                        backgroundColor: statusColor,
+                                        label: Text(
+                                          status,
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : SizedBox(
+                                    width: 120, // Same width constraint
                                     child: Chip(
                                       backgroundColor: statusColor,
                                       label: Text(
@@ -211,17 +227,12 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                         ),
                                       ),
                                     ),
-                                  )
-                                : Chip(
-                                    backgroundColor: statusColor,
-                                    label: Text(
-                                      status,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
                                   ),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 16.0), // Adjust padding
+                            minVerticalPadding: 8.0,
+                            isThreeLine: false,
+                            dense: true,
                           ),
                           if (status == 'Delivered' && !isReviewed)
                             Padding(

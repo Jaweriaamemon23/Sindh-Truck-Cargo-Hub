@@ -29,6 +29,22 @@
   <link rel="manifest" href="manifest.json">
 </head>
 <body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker
+          .register('firebase-messaging-sw.js')
+          .then(function (registration) {
+            console.log('✅ Service Worker registered with scope:', registration.scope);
+          })
+          .catch(function (err) {
+            console.error('❌ Service Worker registration failed:', err);
+          });
+      });
+    }
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  
   <!-- Flutter Web App Bootstrap Script -->
   <script src="flutter_bootstrap.js" async></script>
 </body>

@@ -1,18 +1,15 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'screens/splash_screen.dart';
 
-// Initialize Firebase Cloud Messaging
-FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-// Create a GlobalKey for navigator to handle the context when app is in background
+final FirebaseMessaging messaging = FirebaseMessaging.instance;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
   try {
     await Firebase.initializeApp(
       options: FirebaseOptions(
@@ -25,54 +22,51 @@ void main() async {
       ),
     );
     print("✅ Firebase initialized successfully");
+
+    if (kIsWeb) {
+      print("ℹ️ Skipping service worker setup in Dart. Handled in index.html.");
+    }
   } catch (e) {
     print("❌ Firebase initialization error: $e");
   }
 
-  // Set up Firebase Messaging
   setupFirebaseMessaging();
 
   runApp(const MyApp());
 }
 
-// Firebase Messaging setup
 void setupFirebaseMessaging() {
-  // Background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  if (!kIsWeb) {
+    messaging.subscribeToTopic('cargo_available');
+  }
 
-  // Request permission for notifications
-  messaging.requestPermission();
+  FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
 
-  // Get the FCM token
-  messaging.getToken().then((token) {
+  messaging
+      .getToken(
+          vapidKey: kIsWeb
+              ? "BOfCymZjawSYZtT48IaOzuKZEezVASta8yMWUMM9OKI4i9DBwuLWEQmkrUgRzHlviRWTvsTtYdzRCP8fS_HnGAA"
+              : null)
+      .then((token) {
     print("FCM Token: $token");
-    // Optionally, save this token in Firestore or use it to send notifications
   });
 
-  // Handle messages when the app is in the foreground
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    print('Received a foreground message: ${message.notification?.title}');
-
-    // Show notification or update UI when message is received
-    if (message.notification != null) {
+    print('📩 Foreground message: ${message.notification?.title}');
+    if (message.notification != null && !kIsWeb) {
       showDialog(
         context: navigatorKey.currentContext!,
         builder: (context) => AlertDialog(
-          title: Text(message.notification!.title!),
-          content: Text(message.notification!.body!),
+          title: Text(message.notification!.title ?? 'No Title'),
+          content: Text(message.notification!.body ?? 'No Body'),
         ),
       );
     }
   });
-
-  // Subscribe to a topic for receiving notifications
-  messaging.subscribeToTopic('cargo_available');
-}
-
-// Handle background message
-Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print("Handling a background message: ${message.messageId}");
-  // Handle background notifications or perform tasks
 }
 
 class MyApp extends StatelessWidget {
@@ -81,9 +75,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: const SplashScreen(),
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey, // Add the navigator key here
+      home: const Scaffold(
+        body: SplashScreen(),
+      ),
     );
   }
 }

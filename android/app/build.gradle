@@ -9,7 +9,7 @@ plugins {
 android {
     namespace = "com.example.sindh_truck_cargo_hub"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.2.12479018"  // Specify the NDK version directly here
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -21,9 +21,8 @@ android {
     }
 
     defaultConfig {
-        // Unique Application ID for your app
         applicationId = "com.example.sindh_truck_cargo_hub"
-        minSdkVersion 23  // Make sure this meets the Firebase requirements
+        minSdkVersion 23  // Ensure this is appropriate for Firebase
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -41,7 +40,8 @@ flutter {
 }
 
 dependencies {
-    implementation platform('com.google.firebase:firebase-bom:33.9.0') // Firebase BOM for Firebase libraries version compatibility
-    implementation 'com.google.firebase:firebase-messaging:23.1.0'   // Firebase Messaging library
+    implementation platform('com.google.firebase:firebase-bom:33.9.0') // Firebase BOM for version compatibility
+    implementation 'com.google.firebase:firebase-messaging:23.1.0'   // Firebase Messaging
 }
+
 apply plugin: 'com.google.gms.google-services'
