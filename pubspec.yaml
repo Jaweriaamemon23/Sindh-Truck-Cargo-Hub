@@ -43,7 +43,7 @@ dependencies:
   cloud_firestore: ^5.4.0
   image: ^4.0.17  # Use the latest version available
   file_picker: ^9.0.2
-
+  googleapis_auth: ^1.4.0
 
 
 
@@ -73,6 +73,8 @@ flutter:
   assets:
    - assets/truck2.png
    - assets/Rectangle 1467.png
+   - assets/firebase-admin-key.json
+
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

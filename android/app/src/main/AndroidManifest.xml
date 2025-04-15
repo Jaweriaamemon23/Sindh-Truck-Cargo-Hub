@@ -12,7 +12,9 @@
         android:icon="@mipmap/ic_launcher"
         android:allowBackup="true"
         android:theme="@style/LaunchTheme"
-        android:hardwareAccelerated="true">
+        android:hardwareAccelerated="true"
+        android:networkSecurityConfig="@xml/network_security_config">
+
 
         <!-- Firebase Messaging Service -->
         <service

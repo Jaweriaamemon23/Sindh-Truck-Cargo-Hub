@@ -5,6 +5,8 @@ import 'registration_screen.dart';
 import 'truck_owner_dashboard.dart';
 import 'cargo_transporter_dashboard.dart';
 import 'business_owner_dashboard.dart';
+import 'firebase_notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -17,7 +19,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _isLoading = false;
-
+  final FirebaseMessaging messaging = FirebaseMessaging.instance;
   void _handleLogin() async {
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -46,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-
       // 🔄 Force refresh user data
       await user.reload();
       user = _auth.currentUser; // Get updated user data
@@ -98,17 +99,21 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => _isLoading = false);
         return;
       }
+      await setupFirebaseMessaging();
 
       DocumentSnapshot userDoc = userQuery.docs.first;
       String userType = userDoc['userType'];
       String phone = userDoc['phone'];
 
       print("📌 UserType: $userType, Phone: $phone");
-
+      await saveTokenWithUserInfo(phone: phone, userType: userType);
       // 🚀 Navigate to the respective dashboard
       if (userType == 'Truck Owner') {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (context) => TruckOwnerDashboard()));
+        // 🚀 Navigate to Truck Owner Dashboard
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => TruckOwnerDashboard()),
+        );
       } else if (userType == 'Cargo Transporter') {
         Navigator.pushReplacement(
             context,

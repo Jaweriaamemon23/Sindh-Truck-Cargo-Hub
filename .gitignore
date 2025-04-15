@@ -34,3 +34,5 @@ package-lock.json
 
 # Environment Variables & Secrets
 .env
+# Ignore Firebase Admin Key JSON file
+assets/firebase-admin-key.json

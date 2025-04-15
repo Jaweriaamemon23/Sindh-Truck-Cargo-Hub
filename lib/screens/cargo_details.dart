@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import './fcm_notification_handler.dart';
+import './firebase_notification_service.dart';
 
 class CargoDetailsScreen extends StatefulWidget {
   @override
@@ -58,6 +60,30 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     }
   }
 
+// Store Notification in Firestore for future tracking
+  Future<void> storeNotificationInFirestore({
+    required String cargoDetails,
+    required String weight,
+    required String fromLocation,
+    required String toLocation,
+    required String distance,
+    required String vehicleType,
+  }) async {
+    try {
+      await FirebaseFirestore.instance.collection('notifications').add({
+        'cargoDetails': cargoDetails,
+        'weight': weight,
+        'fromLocation': fromLocation,
+        'toLocation': toLocation,
+        'distance': distance,
+        'vehicleType': vehicleType,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print("Error storing notification in Firestore: $e");
+    }
+  }
+
   Future<void> _requestBooking() async {
     User? user = FirebaseAuth.instance.currentUser;
 
@@ -104,6 +130,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     }
 
     var ownerData = ownerSnapshot.data() as Map<String, dynamic>?;
+
     if (ownerData == null || ownerData['userType'] != 'Business Owner') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -129,6 +156,29 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       'status': 'Pending',
     });
 
+    // ✅ Debugging Statements for Notification Trigger
+    print("🚀 Triggering push notification to truck owners...");
+// ✅ Send FCM Notification to Truck Owners
+    await sendFCMNotificationToTruckOwners(
+      cargoDetails: selectedCargoType ?? "Unknown Cargo",
+      weight: _weightController.text,
+      fromLocation: selectedStartCity ?? "Unknown",
+      toLocation: selectedEndCity ?? "Unknown",
+      distance: _distanceController.text,
+      vehicleType: 'Truck', // You can replace with dynamic if needed
+    );
+    print("✅ Notification sent to truck owners!");
+
+// ✅ Store Notification in Firestore for future tracking
+    await storeNotificationInFirestore(
+      cargoDetails: selectedCargoType ?? "Unknown Cargo",
+      weight: _weightController.text,
+      fromLocation: selectedStartCity ?? "Unknown",
+      toLocation: selectedEndCity ?? "Unknown",
+      distance: _distanceController.text,
+      vehicleType: 'Truck', // Replace with dynamic if needed
+    );
+    // ✅ Show confirmation message to user
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Booking Requested Successfully!'),
@@ -136,6 +186,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       ),
     );
 
+    // ✅ Reset the form after successful booking request
     setState(() {
       selectedCargoType = null;
       selectedStartCity = null;
@@ -146,6 +197,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       estimatedPrice = null;
     });
 
+    // ✅ Close the current screen after booking request
     Navigator.pop(context);
   }
 
