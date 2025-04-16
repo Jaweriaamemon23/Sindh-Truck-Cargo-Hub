@@ -4,17 +4,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'screens/splash_screen.dart';
 
 final FirebaseMessaging messaging = FirebaseMessaging.instance;
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await _initializeFirebaseIfNeeded();
+  print("🔔 Background message received: ${message.messageId}");
+}
 
-  try {
+Future<void> _initializeFirebaseIfNeeded() async {
+  if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
-      options: FirebaseOptions(
+      options: const FirebaseOptions(
         apiKey: "AIzaSyB8daSx_lP5pBLUqiD8LsKW2Mer2V9Jy8U",
         authDomain: "sindhtruckcargohub.firebaseapp.com",
         projectId: "sindhtruckcargohub",
@@ -24,9 +28,23 @@ void main() async {
       ),
     );
     print("✅ Firebase initialized successfully");
-    if (kIsWeb) {
-      print("ℹ️ Skipping service worker setup in Dart. Handled in index.html.");
+  } else {
+    print("ℹ️ Firebase already initialized.");
+  }
+}
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    await _initializeFirebaseIfNeeded();
+
+    if (!kIsWeb) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+    } else {
+      print("ℹ️ Web platform detected — service worker handled in index.html.");
     }
+
   } catch (e) {
     print("❌ Firebase initialization error: $e");
   }
@@ -42,10 +60,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
-      title: 'Sindh truck cargo hub',
-      home: const Scaffold(
-        body: SplashScreen(),
-      ),
+      title: 'Sindh Truck Cargo Hub',
+      home: const SplashScreen(),
     );
   }
 }

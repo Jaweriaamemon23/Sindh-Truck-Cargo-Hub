@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Replace with your actual tracking screen import
+import 'cargo_tracking_screen.dart';
+
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
@@ -131,7 +134,8 @@ class BookCargoScreen extends StatelessWidget {
                                   icon: Icon(Icons.check, color: Colors.white),
                                   label: Text("Accept"),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green),
+                                      backgroundColor: Colors.green,
+                                      foregroundColor: Colors.white),
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () =>
@@ -139,23 +143,47 @@ class BookCargoScreen extends StatelessWidget {
                                   icon: Icon(Icons.cancel, color: Colors.white),
                                   label: Text("Reject"),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red),
+                                      backgroundColor: Colors.red,
+                                      foregroundColor: Colors.white),
                                 ),
                               ],
                             ),
                           if (status == "Accepted" &&
                               acceptedBy == currentUser?.email)
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: ElevatedButton.icon(
-                                onPressed: () =>
-                                    _markAsDelivered(bookingId, context),
-                                icon: Icon(Icons.check_circle,
-                                    color: Colors.white),
-                                label: Text("Mark as Delivered"),
-                                style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue),
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: () =>
+                                      _markAsDelivered(bookingId, context),
+                                  icon: Icon(Icons.check_circle,
+                                      color: Colors.white),
+                                  label: Text("Mark as Delivered"),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color.fromARGB(
+                                          255, 56, 145, 218),
+                                      foregroundColor: Colors.white),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => CargoTrackingScreen(
+                                          bookingId: bookingId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  icon: Icon(Icons.location_on,
+                                      color: Colors.white),
+                                  label: Text("Track"),
+                                  style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color.fromARGB(
+                                          255, 146, 96, 231),
+                                      foregroundColor: Colors.white),
+                                ),
+                              ],
                             ),
                         ],
                       ),
