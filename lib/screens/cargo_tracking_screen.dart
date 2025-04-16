@@ -7,12 +7,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sindh_truck_cargo_hub/services/location_service.dart';
 
 class CargoTrackingScreen extends StatefulWidget {
-  final String? bookingId; // Accept bookingId from previous screen
+  final String? bookingId;
 
-  const CargoTrackingScreen({
-    super.key,
-    this.bookingId,
-  });
+  const CargoTrackingScreen({super.key, this.bookingId});
 
   @override
   State<CargoTrackingScreen> createState() => _CargoTrackingScreenState();
@@ -31,10 +28,13 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
   @override
   void initState() {
     super.initState();
+    print("[DEBUG] initState called");
     fetchUserBookings();
 
     if (widget.bookingId != null) {
       selectedBookingId = widget.bookingId;
+      print(
+          "[DEBUG] Booking ID passed from previous screen: $selectedBookingId");
       startTracking(widget.bookingId!);
       fetchBookingStatus(widget.bookingId!);
     }
@@ -42,6 +42,7 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
 
   @override
   void dispose() {
+    print("[DEBUG] dispose() called - cancelling position stream");
     positionSubscription?.cancel();
     super.dispose();
   }
@@ -49,6 +50,7 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
   Future<void> fetchUserBookings() async {
     final user = FirebaseAuth.instance.currentUser;
     final userEmail = user?.email;
+    print("[DEBUG] Fetching bookings for user: $userEmail");
 
     if (userEmail == null) return;
 
@@ -60,11 +62,13 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
 
       final bookings = querySnapshot.docs.map((doc) {
         final data = doc.data();
+        print("[DEBUG] Booking Found: ${doc.id} => $data");
         return {
           'id': doc.id,
           'startCity': data['startCity'] ?? 'Unknown',
           'endCity': data['endCity'] ?? 'Unknown',
           'status': data['status'] ?? 'Unknown',
+          'acceptedBy': data['acceptedBy'] ?? 'Unknown',
         };
       }).toList();
 
@@ -73,14 +77,28 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
           bookingDetails = bookings;
           isLoadingBookings = false;
         });
+        print("[DEBUG] Total Bookings Fetched: ${bookings.length}");
       }
     } catch (e) {
       _showSnackbar("Failed to fetch bookings: $e");
+      print("[DEBUG] Error fetching bookings: $e");
     }
   }
 
   Future<void> startTracking(String bookingId) async {
     positionSubscription?.cancel();
+    print("[DEBUG] startTracking() called for booking ID: $bookingId");
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied ||
+        permission == LocationPermission.deniedForever) {
+      permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.always &&
+          permission != LocationPermission.whileInUse) {
+        _showSnackbar("Location permission is required to track cargo.");
+        return;
+      }
+    }
 
     try {
       final bookingDoc = await FirebaseFirestore.instance
@@ -88,9 +106,11 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
           .doc(bookingId)
           .get();
       final acceptedBy = bookingDoc['acceptedBy'];
-
       final user = FirebaseAuth.instance.currentUser;
       final userEmail = user?.email;
+
+      print(
+          "[DEBUG] Booking acceptedBy: $acceptedBy, Current user: $userEmail");
 
       if (acceptedBy != null &&
           acceptedBy != 'Unknown' &&
@@ -100,27 +120,38 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
         positionSubscription = Geolocator.getPositionStream(
           locationSettings: const LocationSettings(distanceFilter: 500),
         ).listen((Position position) async {
+          print(
+              "[DEBUG] Location updated: ${position.latitude}, ${position.longitude}");
+
           try {
             final newCity =
                 (await LocationService.getCityFromCoordinates(position))
                     .trim()
                     .toLowerCase();
+            print("[DEBUG] Current city from GPS: $newCity");
 
             if (newCity != currentCity) {
+              print("[DEBUG] City changed from $currentCity to $newCity");
               currentCity = newCity;
               await logCityProgress(bookingId);
             }
           } catch (e) {
             _showSnackbar("Location error: $e");
+            print("[DEBUG] Error processing location: $e");
           }
         });
+      } else {
+        print("[DEBUG] Tracking not started - user is not truck owner.");
       }
     } catch (e) {
       _showSnackbar("Booking not accepted yet!");
+      print("[DEBUG] Error starting tracking: $e");
     }
   }
 
   Future<void> logCityProgress(String bookingId) async {
+    print("[DEBUG] logCityProgress() for $bookingId");
+
     try {
       final position = await LocationService.getCurrentLocation();
       final city = (await LocationService.getCityFromCoordinates(position))
@@ -133,8 +164,12 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
           .doc(bookingId)
           .collection('progress')
           .add({'city': city, 'timestamp': timestamp});
+
+      print(
+          "[DEBUG] Logged progress: $city at $timestamp for booking $bookingId");
     } catch (e) {
       _showSnackbar("Failed to log city: $e");
+      print("[DEBUG] Error logging city: $e");
     }
   }
 
@@ -144,19 +179,25 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
   }
 
   void fetchBookingStatus(String bookingId) async {
+    print("[DEBUG] fetchBookingStatus() called for booking ID: $bookingId");
+
     try {
       final doc = await FirebaseFirestore.instance
           .collection('bookings')
           .doc(bookingId)
           .get();
       final data = doc.data();
+      print("[DEBUG] Booking status data: $data");
+
       if (data != null && mounted) {
         setState(() {
           bookingStatus = data['status'] ?? 'pending';
         });
+        print("[DEBUG] Booking status set to: $bookingStatus");
       }
     } catch (e) {
       _showSnackbar("Error fetching status: $e");
+      print("[DEBUG] Error fetching status: $e");
     }
   }
 
@@ -176,7 +217,6 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // 👇 Skip dropdown if bookingId is passed
             if (widget.bookingId == null) ...[
               if (isLoadingBookings)
                 const CircularProgressIndicator()
@@ -243,26 +283,56 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
   }
 
   Widget _buildBookingDropdown() {
-    return DropdownButton<String>(
-      value: selectedBookingId,
-      hint: const Text("Select Booking to Track"),
-      onChanged: (String? value) {
-        if (value != null && value.isNotEmpty) {
-          setState(() {
-            selectedBookingId = value;
-            bookingStatus = 'pending';
-          });
-          startTracking(value);
-          fetchBookingStatus(value);
-        }
-      },
-      items: bookingDetails.map((booking) {
-        return DropdownMenuItem<String>(
-          value: booking['id'],
-          child: Text(
-              '${booking['startCity']} → ${booking['endCity']} (${booking['status']})'),
-        );
-      }).toList(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: DropdownButtonFormField<String>(
+        value: selectedBookingId,
+        decoration: InputDecoration(
+          labelText: "Select Booking to Track",
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        isExpanded: true,
+        onChanged: (String? value) {
+          if (value != null && value.isNotEmpty) {
+            print("[DEBUG] Booking selected from dropdown: $value");
+            setState(() {
+              selectedBookingId = value;
+              bookingStatus = 'pending';
+            });
+            startTracking(value);
+            fetchBookingStatus(value);
+          }
+        },
+        selectedItemBuilder: (BuildContext context) {
+          return bookingDetails.map<Widget>((booking) {
+            return Text(
+              '${booking['startCity']} → ${booking['endCity']} (${booking['status']})',
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 16),
+            );
+          }).toList();
+        },
+        items: bookingDetails.map((booking) {
+          return DropdownMenuItem<String>(
+            value: booking['id'],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${booking['startCity']} → ${booking['endCity']}',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                SizedBox(height: 4),
+                Text('Accepted By: ${booking['acceptedBy']}'),
+                Text('Status: ${booking['status']}',
+                    style: TextStyle(fontStyle: FontStyle.italic)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
     );
   }
 }
