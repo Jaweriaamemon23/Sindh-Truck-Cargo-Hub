@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'reviews.dart';
+import 'package:provider/provider.dart';  // Add this import for Provider
+
+// Language Provider
+class LanguageProvider with ChangeNotifier {
+  bool _isSindhi = false;
+
+  bool get isSindhi => _isSindhi;
+
+  void toggleLanguage() {
+    _isSindhi = !_isSindhi;
+    notifyListeners();
+  }
+}
 
 class MyCargoScreen extends StatefulWidget {
   @override
@@ -121,12 +134,14 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Text(
-            "My Cargo",
+            languageProvider.isSindhi ? "منهنجي مال" : "My Cargo",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -145,7 +160,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
-                      "You have not requested any cargo yet.",
+                      languageProvider.isSindhi
+                          ? "توهان اڃا تائين ڪا مال درخواست ناهي ڪئي."
+                          : "You have not requested any cargo yet.",
                       style:
                           TextStyle(fontSize: 18, color: Colors.blue.shade900),
                     ),
@@ -192,8 +209,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 color: Colors.blue.shade900),
                             title: Text(cargoType),
                             subtitle: Text(
-                              "From: $startCity ➝ To: $endCity\n"
-                              "Weight: ${weight.toString()} tons",
+                              languageProvider.isSindhi
+                                  ? "آغاز: $startCity ➝ اختتام: $endCity\nوزن: ${weight.toString()} ٽن"
+                                  : "From: $startCity ➝ To: $endCity\nWeight: ${weight.toString()} tons",
                             ),
                             trailing: acceptedBy != null
                                 ? InkWell(
@@ -251,7 +269,11 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                     );
                                   },
                                   icon: Icon(Icons.star, color: Colors.amber),
-                                  label: Text("Leave a Review"),
+                                  label: Text(
+                                    languageProvider.isSindhi
+                                        ? "جائزو ڇڏڻ"
+                                        : "Leave a Review",
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue.shade800,
                                     foregroundColor: Colors.white,
@@ -266,7 +288,11 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                               child: Align(
                                 alignment: Alignment.centerRight,
                                 child: Chip(
-                                  label: Text("Reviewed"),
+                                  label: Text(
+                                    languageProvider.isSindhi
+                                        ? "جائزو ڏنو ويو"
+                                        : "Reviewed",
+                                  ),
                                   backgroundColor: Colors.grey.shade200,
                                   avatar: Icon(Icons.check_circle,
                                       color: Colors.green),

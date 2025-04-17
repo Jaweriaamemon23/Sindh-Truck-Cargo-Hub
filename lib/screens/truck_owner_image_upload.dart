@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'cloudinary_service.dart';
 import 'login_screen.dart';
+import '../providers/language_provider.dart';
+import 'package:provider/provider.dart';
 
 class TruckOwnerImageUpload extends StatefulWidget {
   final String userId;
@@ -109,22 +111,24 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return Scaffold(
-      appBar: AppBar(title: Text("Upload Truck Owner Images")),
+      appBar: AppBar(title: Text(isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Truck Owner Images")),
       body: Center(
         child: SingleChildScrollView(
           child: Column(
             children: [
               _buildImagePicker(
-                  "Upload NIC Front", "NIC_Front", _nicFrontImage),
-              _buildImagePicker("Upload NIC Back", "NIC_Back", _nicBackImage),
+                  isSindhi ? "این آئی سی فرنٹ اپ لوڈ کریں" : "Upload NIC Front", "NIC_Front", _nicFrontImage),
+              _buildImagePicker(isSindhi ? "این آئی سی بیک اپ لوڈ کریں" : "Upload NIC Back", "NIC_Back", _nicBackImage),
               _buildImagePicker(
-                  "Upload Vehicle Image", "Vehicle", _vehicleImage),
+                  isSindhi ? "گاڑی کی تصویر اپ لوڈ کریں" : "Upload Vehicle Image", "Vehicle", _vehicleImage),
               _isUploading
                   ? CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _uploadImages,
-                      child: Text("Upload Images"),
+                      child: Text(isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Images"),
                     ),
             ],
           ),

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'truck_owner_image_upload.dart';
+import 'package:provider/provider.dart';
+import 'package:sindh_truck_cargo_hub/providers/language_provider.dart'; // Import your LanguageProvider
 
 class TruckOwnerForm extends StatefulWidget {
   final String userId;
@@ -18,6 +20,7 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
   final TextEditingController _vehicleTypeController = TextEditingController();
   final TextEditingController _vehicleNumController = TextEditingController();
   final TextEditingController _licenseNumController = TextEditingController();
+
   Future<void> _submitForm() async {
     if (_formKey.currentState!.validate()) {
       try {
@@ -43,7 +46,9 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Please upload images to complete registration.')),
+              content: Text(Provider.of<LanguageProvider>(context).isSindhi
+                  ? 'مھرباني ڪري تصويرون اپلوڊ ڪريو مڪمل رجسٽريشن لاءِ.'
+                  : 'Please upload images to complete registration.')),
         );
 
         Navigator.pushReplacement(
@@ -68,7 +73,12 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Truck Owner Details"),
+        title: Text(
+          Provider.of<LanguageProvider>(context).isSindhi
+              ? 'ٽرڪ مالڪ تفصيل'
+              : 'Truck Owner Details',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blueAccent,
       ),
       body: SingleChildScrollView(
@@ -85,16 +95,32 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
               child: Column(
                 children: [
                   _buildTextField(
-                      _driverAgeController, "Driver Age", Icons.cake),
+                      _driverAgeController,
+                      Provider.of<LanguageProvider>(context).isSindhi
+                          ? 'ڊرائيور جي عمر'
+                          : 'Driver Age',
+                      Icons.cake),
                   const SizedBox(height: 16),
-                  _buildTextField(_vehicleTypeController, "Vehicle Type",
+                  _buildTextField(
+                      _vehicleTypeController,
+                      Provider.of<LanguageProvider>(context).isSindhi
+                          ? 'گاڏي جو قسم'
+                          : 'Vehicle Type',
                       Icons.local_shipping),
                   const SizedBox(height: 16),
-                  _buildTextField(_vehicleNumController, "Vehicle Number",
+                  _buildTextField(
+                      _vehicleNumController,
+                      Provider.of<LanguageProvider>(context).isSindhi
+                          ? 'گاڏي جو نمبر'
+                          : 'Vehicle Number',
                       Icons.confirmation_number),
                   const SizedBox(height: 16),
                   _buildTextField(
-                      _licenseNumController, "License Number", Icons.badge),
+                      _licenseNumController,
+                      Provider.of<LanguageProvider>(context).isSindhi
+                          ? 'لائسنس جو نمبر'
+                          : 'License Number',
+                      Icons.badge),
                   const SizedBox(height: 30),
                   ElevatedButton(
                     onPressed: _submitForm,
@@ -105,9 +131,11 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      "Next",
-                      style: TextStyle(
+                    child: Text(
+                      Provider.of<LanguageProvider>(context).isSindhi
+                          ? 'اڳي وڃو'
+                          : 'Next',
+                      style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
                           color: Colors.white),

@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sindh_truck_cargo_hub/providers/language_provider.dart'; // Import the LanguageProvider
+import 'package:provider/provider.dart'; // Import Provider for accessing LanguageProvider
+
 import 'add_truck_dialog.dart';
 
 class MyTrucksScreen extends StatelessWidget {
@@ -123,10 +126,15 @@ class MyTrucksScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     String? userEmail = FirebaseAuth.instance.currentUser?.email;
 
+    // Access LanguageProvider to get the current language setting
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'My Trucks',
+          isSindhi
+              ? 'منهنجا ٽرڪ'
+              : 'My Trucks', // Toggle title based on language
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: Colors.blue.shade800,
@@ -144,9 +152,35 @@ class MyTrucksScreen extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
             child: Text(
-              "Add Truck",
+              isSindhi
+                  ? 'ٽرانسپورٽ جو اضافو'
+                  : 'Add Truck', // Toggle button text
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              // Toggle language setting when menu item is selected
+              if (value == 'Sindhi') {
+                Provider.of<LanguageProvider>(context, listen: false)
+                    .toggleLanguage();
+              } else {
+                Provider.of<LanguageProvider>(context, listen: false)
+                    .toggleLanguage();
+              }
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(
+                  value: 'Sindhi',
+                  child: Text("Sindhi"),
+                ),
+                PopupMenuItem(
+                  value: 'English',
+                  child: Text("English"),
+                ),
+              ];
+            },
           ),
         ],
       ),
@@ -163,7 +197,9 @@ class MyTrucksScreen extends StatelessWidget {
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text(
-                "No trucks registered yet.",
+                isSindhi
+                    ? "هن وقت ڪا به ٽرڪ رجسٽرڊ ناهي"
+                    : "No trucks registered yet.",
                 style: TextStyle(fontSize: 18, color: Colors.blue.shade900),
               ),
             );

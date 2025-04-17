@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // ✅ Import provider
 import 'login_screen.dart'; // ✅ Import the login screen
+import '../providers/language_provider.dart'; // ✅ Import the LanguageProvider
 
 class BusinessOwnerForm extends StatefulWidget {
   final String name;
@@ -70,7 +72,11 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: Text("Business Owner Details"),
+          title: Text(
+            Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                ? 'ڪاروباري مالڪ جا تفصيل'
+                : 'Business Owner Details', // Dynamic title based on language
+          ),
           backgroundColor: Colors.blueAccent),
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
@@ -79,19 +85,35 @@ class _BusinessOwnerFormState extends State<BusinessOwnerForm> {
           child: Column(
             children: [
               _buildTextField(
-                  _businessNameController, "Business Name", Icons.business),
+                  _businessNameController,
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'ڪاروبار جو نالو'
+                      : 'Business Name',
+                  Icons.business),
               _buildTextField(
-                  _businessTypeController, "Business Type", Icons.category),
+                  _businessTypeController,
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'ڪاروبار جو قسم'
+                      : 'Business Type',
+                  Icons.category),
               _buildTextField(
-                  _locationController, "Location", Icons.location_on),
+                  _locationController,
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'جڳھ'
+                      : 'Location',
+                  Icons.location_on),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed:
                     _saveBusinessOwnerData, // ✅ Calls function to save and navigate
                 style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent),
-                child: Text("Register",
-                    style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text(
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'رجسٽريشن'
+                      : 'Register', // Dynamic button text based on language
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
             ],
           ),

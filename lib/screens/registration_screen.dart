@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'cargo_transporter_form.dart';
 import 'truck_owner_form.dart';
 import 'business_owner_form.dart';
+import 'package:provider/provider.dart';
+import '../providers/language_provider.dart'; // Assuming you've created this provider for managing languages
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -42,14 +44,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void _registerUser() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Please fill all fields correctly!')),
+        SnackBar(
+            content: Text(
+                '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري سڀئي فيلڊ صحيح طريقي سان ڀريو!' : 'Please fill all fields correctly!'}')),
       );
       return;
     }
 
     if (selectedUserType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('❌ Please select a user type!')),
+        SnackBar(
+            content: Text(
+                '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري صارف جي قسم چونڊيو!' : 'Please select a user type!'}')),
       );
       return;
     }
@@ -84,7 +90,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("✅ Verification email sent! Please verify.")),
+          SnackBar(
+              content: Text(
+                  "✅ ${Provider.of<LanguageProvider>(context).isSindhi ? 'توهان جو اي ميل موڪليو ويو آهي! مھرباني ڪري تصديق ڪريو.' : 'Verification email sent! Please verify.'}")),
         );
 
         setState(() {
@@ -96,7 +104,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Registration failed: $e")),
+        SnackBar(
+            content: Text(
+                "❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'رجسٽريشن ۾ ناڪامي: $e' : 'Registration failed: $e'}")),
       );
       setState(() => _isLoading = false);
     }
@@ -115,7 +125,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("✅ Email verified! Redirecting...")),
+          SnackBar(
+              content: Text(
+                  "✅ ${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل تصديق ٿي وئي آهي! رهنمائي ٿي رهي آهي...' : 'Email verified! Redirecting...'}")),
         );
 
         _navigateToUserForm(phone);
@@ -155,7 +167,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     if (_waitingForVerification) {
       return Scaffold(
         appBar: AppBar(
-            title: Text("Email Verification Required"),
+            title: Text(
+                "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل جي تصديق گهرجي' : 'Email Verification Required'}"),
             backgroundColor: Colors.blueAccent),
         body: Center(
           child: Column(
@@ -164,12 +177,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               Icon(Icons.email, size: 80, color: Colors.blueAccent),
               SizedBox(height: 20),
               Text(
-                "Please verify your email to continue",
+                "${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري پنهنجو اي ميل تصديق ڪريو' : 'Please verify your email to continue'}",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
-                "A verification link has been sent to your email.",
+                "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل تي تصديق جو لنڪ موڪليو ويو آهي.' : 'A verification link has been sent to your email.'}",
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 30),
@@ -182,7 +195,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-          title: Text("Register Your Account"),
+          title: Text(
+              "${Provider.of<LanguageProvider>(context).isSindhi ? 'پنهنجي اڪائونٽ کي رجسٽر ڪريو' : 'Register Your Account'}"),
           backgroundColor: Colors.blueAccent),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
@@ -190,20 +204,38 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           key: _formKey,
           child: Column(
             children: [
-              _buildTextField(_nameController, "Name", Icons.person),
-              _buildTextField(_emailController, "Email", Icons.email,
+              _buildTextField(
+                  _nameController,
+                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'نالو' : 'Name'}",
+                  Icons.person),
+              _buildTextField(
+                  _emailController,
+                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل' : 'Email'}",
+                  Icons.email,
                   keyboardType: TextInputType.emailAddress),
-              _buildTextField(_nicController, "NIC Number", Icons.credit_card,
-                  keyboardType: TextInputType.number, nicValidation: true),
-              _buildTextField(_passwordController, "Password", Icons.lock,
+              _buildTextField(
+                  _nicController,
+                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'اين آءِ سي نمبر' : 'NIC Number'}",
+                  Icons.credit_card,
+                  keyboardType: TextInputType.number,
+                  nicValidation: true),
+              _buildTextField(
+                  _passwordController,
+                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'پاسورڊ' : 'Password'}",
+                  Icons.lock,
                   obscureText: true),
-              _buildTextField(_phoneController, "Phone Number", Icons.phone,
-                  keyboardType: TextInputType.phone, phoneValidation: true),
+              _buildTextField(
+                  _phoneController,
+                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'موبائل نمبر' : 'Phone Number'}",
+                  Icons.phone,
+                  keyboardType: TextInputType.phone,
+                  phoneValidation: true),
               SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: selectedUserType,
                 decoration: InputDecoration(
-                    labelText: "Select User Type",
+                    labelText:
+                        "${Provider.of<LanguageProvider>(context).isSindhi ? 'صارف جو قسم چونڊيو' : 'Select User Type'}",
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12))),
                 items: userTypes
@@ -211,8 +243,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                         value: userType, child: Text(userType)))
                     .toList(),
                 onChanged: (value) => setState(() => selectedUserType = value),
-                validator: (value) =>
-                    value == null ? '❌ Please select a user type' : null,
+                validator: (value) => value == null
+                    ? '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري صارف جو قسم چونڊيو' : 'Please select a user type'}'
+                    : null,
               ),
               SizedBox(height: 30),
               _isLoading
@@ -221,8 +254,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       onPressed: _registerUser,
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueAccent),
-                      child: Text("Register",
-                          style: TextStyle(color: Colors.white, fontSize: 16)),
+                      child: Text(
+                        "${Provider.of<LanguageProvider>(context).isSindhi ? 'رجسٽر ڪريو' : 'Register'}",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
                     ),
             ],
           ),
@@ -250,11 +285,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
         validator: (value) {
           if (value == null || value.trim().isEmpty)
-            return '❌ Please enter $label';
+            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري $label داخل ڪريو' : 'Please enter $label'}';
           if (nicValidation && value.length != 13)
-            return '❌ NIC must be exactly 13 digits';
+            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'اين آءِ سي ۾ بالڪل 13 انگ هجڻ گهرجن' : 'NIC must be exactly 13 digits'}';
           if (phoneValidation && value.length != 11)
-            return '❌ Phone must be exactly 11 digits';
+            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'موبائل نمبر ۾ بالڪل 11 انگ هجڻ گهرجن' : 'Phone must be exactly 11 digits'}';
           return null;
         },
       ),

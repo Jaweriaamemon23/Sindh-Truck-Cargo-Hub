@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../providers/language_provider.dart';
 
 class AvailableCargoScreen extends StatefulWidget {
   @override
@@ -38,13 +40,21 @@ class _AvailableCargoScreenState extends State<AvailableCargoScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Cargo Accepted Successfully!"),
+        content: Text(
+          Provider.of<LanguageProvider>(context, listen: false).isSindhi
+              ? "ڪارگو ڪاميابي سان قبول ڪيو!"
+              : "Cargo Accepted Successfully!",
+        ),
         backgroundColor: Colors.green,
       ));
     } catch (e) {
       print("❌ Error accepting cargo: $e");
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Error accepting cargo. Try again."),
+        content: Text(
+          Provider.of<LanguageProvider>(context, listen: false).isSindhi
+              ? "ڪارگو قبول ڪرڻ ۾ غلطي آهي. ٻيهر ڪوشش ڪريو."
+              : "Error accepting cargo. Try again.",
+        ),
         backgroundColor: Colors.red,
       ));
     }
@@ -54,7 +64,12 @@ class _AvailableCargoScreenState extends State<AvailableCargoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("📦 Available Cargo"),
+        title: Text(
+          Provider.of<LanguageProvider>(context, listen: false).isSindhi
+              ? 'دستياب ڪارگو'
+              : 'Available Cargo',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.blueAccent,
       ),
       body: Column(
@@ -76,8 +91,12 @@ class _AvailableCargoScreenState extends State<AvailableCargoScreen> {
 
                 if (cargoList.isEmpty) {
                   return Center(
-                      child: Text("No available cargo requests.",
-                          style: TextStyle(color: Colors.grey)));
+                      child: Text(
+                    Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                        ? "ڪو به موجود ڪارگو درخواست ناهي."
+                        : "No available cargo requests.",
+                    style: TextStyle(color: Colors.grey),
+                  ));
                 }
 
                 return ListView.builder(
@@ -107,7 +126,9 @@ class _AvailableCargoScreenState extends State<AvailableCargoScreen> {
           });
         },
         decoration: InputDecoration(
-          labelText: "Search by cargo type...",
+          labelText: Provider.of<LanguageProvider>(context, listen: false).isSindhi
+              ? "ڪارگو جي قسم سان ڳوليو..."
+              : "Search by cargo type...",
           prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         ),
@@ -123,24 +144,37 @@ class _AvailableCargoScreenState extends State<AvailableCargoScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: Icon(Icons.inventory, color: Colors.blueAccent),
-        title: Text("${data['cargoType'] ?? "Unknown"}",
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          "${data['cargoType'] ?? (Provider.of<LanguageProvider>(context, listen: false).isSindhi ? "نامعلوم" : "Unknown")}",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("📍 From: ${data['startCity'] ?? 'N/A'} → ${data['endCity'] ?? 'N/A'}"),
-            Text("⚖️ Weight: ${data['weight'] ?? '0'} tons"),
-            Text("📏 Distance: ${data['distance'] ?? '0'} km"),
-            Text("💰 Price: ${data['price'] ?? 0} PKR"),
+            Text(
+              "📍 ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'کان:' : 'From:'} ${data['startCity'] ?? 'N/A'} → ${data['endCity'] ?? 'N/A'}",
+            ),
+            Text(
+              "⚖️ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'وزن:' : 'Weight:'} ${data['weight'] ?? '0'} ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'ٽن' : 'tons'}",
+            ),
+            Text(
+              "📏 ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'فاصلو:' : 'Distance:'} ${data['distance'] ?? '0'} ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'ڪم' : 'km'}",
+            ),
+            Text(
+              "💰 ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'قيمت:' : 'Price:'} ${data['price'] ?? 0} PKR",
+            ),
           ],
         ),
         trailing: ElevatedButton(
           onPressed: () => _acceptCargo(cargoId, data),
-          child: Text("Accept"),
+          child: Text(
+            Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                ? 'قبول ڪريو'
+                : 'Accept',
+          ),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
       ),

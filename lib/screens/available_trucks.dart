@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../providers/language_provider.dart'; // Import your LanguageProvider here
 
 class AvailableTrucksScreen extends StatelessWidget {
   @override
@@ -8,8 +10,11 @@ class AvailableTrucksScreen extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
+          // Title with translation
           Text(
-            "Available Trucks",
+            Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                ? "دستياب ٽرڪن"
+                : "Available Trucks",
             style: TextStyle(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
@@ -20,7 +25,8 @@ class AvailableTrucksScreen extends StatelessWidget {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('users')
-                  .where('userType', isEqualTo: 'Truck Owner') // ✅ Fetch Truck Owners
+                  .where('userType',
+                      isEqualTo: 'Truck Owner') // ✅ Fetch Truck Owners
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
@@ -28,7 +34,12 @@ class AvailableTrucksScreen extends StatelessWidget {
                 }
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
-                    child: Text("No available trucks found."),
+                    child: Text(
+                      Provider.of<LanguageProvider>(context, listen: false)
+                              .isSindhi
+                          ? "ڪو به دستياب ٽرڪ نه آهي."
+                          : "No available trucks found.",
+                    ),
                   );
                 }
 
@@ -45,11 +56,15 @@ class AvailableTrucksScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: ListTile(
-                        leading: Icon(Icons.local_shipping, color: Colors.blue.shade900),
+                        leading: Icon(Icons.local_shipping,
+                            color: Colors.blue.shade900),
                         title: Text(owner['name'],
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text("Phone: ${owner['phone']}"),
-                        trailing: Icon(Icons.arrow_forward_ios, color: Colors.blue.shade900),
+                        subtitle: Text(
+                          "${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'فون:' : 'Phone:'} ${owner['phone']}",
+                        ),
+                        trailing: Icon(Icons.arrow_forward_ios,
+                            color: Colors.blue.shade900),
                         onTap: () {
                           // Navigate to truck details page if needed
                         },

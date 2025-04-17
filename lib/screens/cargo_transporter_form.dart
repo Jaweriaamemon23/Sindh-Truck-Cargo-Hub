@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
 import 'login_screen.dart';
+import '../providers/language_provider.dart';
 
 class CargoTransporterForm extends StatefulWidget {
   final Map<String, String> userData;
 
-  const CargoTransporterForm({required this.userData, Key? key})
-      : super(key: key);
+  const CargoTransporterForm({required this.userData, Key? key}) : super(key: key);
 
   @override
   _CargoTransporterFormState createState() => _CargoTransporterFormState();
@@ -32,9 +33,6 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
           throw Exception("❌ User ID (phone) is missing!");
         }
 
-        print("[DEBUG] User ID: $userId");
-        print("[DEBUG] Saving main user data...");
-
         await FirebaseFirestore.instance.collection('users').doc(userId).set({
           'userId': userId,
           'name': widget.userData['name'],
@@ -44,17 +42,11 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
           'createdAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-        print("[SUCCESS] Main user data saved!");
-
-        // Create subcollection for Cargo Transporter details
         DocumentReference cargoRef = FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
-            .collection('cargoTransporter') // Subcollection
-            .doc("details"); // Document inside subcollection
-
-        print(
-            "[DEBUG] Creating Cargo Transporter subcollection at: users/$userId/cargoTransporter/details");
+            .collection('cargoTransporter')
+            .doc("details");
 
         await cargoRef.set({
           'companyName': _companyNameController.text.trim(),
@@ -63,13 +55,9 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
           'timestamp': FieldValue.serverTimestamp(),
         });
 
-        print("[SUCCESS] Cargo Transporter details stored in subcollection!");
-
-        // ✅ Check if the data actually exists after writing
         DocumentSnapshot snapshot = await cargoRef.get();
         if (snapshot.exists) {
-          print(
-              "[CONFIRMED] Firestore successfully saved the subcollection data!");
+          print("[CONFIRMED] Firestore successfully saved the subcollection data!");
         } else {
           print("[ERROR] Firestore DID NOT save the subcollection data! 🚨");
         }
@@ -90,17 +78,26 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Cargo Transporter Details"),
+        title: Text(isSindhi ? "ڪارگو ٽرانسپورٽر تفصيلات" : "Cargo Transporter Details"),
         backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.language),
+            onPressed: () {
+              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
+            },
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Card(
           elevation: 8,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -109,33 +106,39 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
               child: Column(
                 children: [
                   _buildTextField(
-                      _companyNameController, "Company Name", Icons.business),
+                    _companyNameController,
+                    isSindhi ? "ڪمپني جو نالو" : "Company Name",
+                    Icons.business,
+                    isSindhi,
+                  ),
                   const SizedBox(height: 16),
-                  _buildTextField(_companyTypeController, "Company Type",
-                      Icons.business_center),
+                  _buildTextField(
+                    _companyTypeController,
+                    isSindhi ? "ڪمپني جو قسم" : "Company Type",
+                    Icons.business_center,
+                    isSindhi,
+                  ),
                   const SizedBox(height: 16),
                   SwitchListTile(
-                    title: Text("Is Company Verified?"),
+                    title: Text(isSindhi ? "ڇا ڪمپني تصديق ٿيل آهي؟" : "Is Company Verified?"),
                     value: _isCompanyVerified,
-                    onChanged: (value) =>
-                        setState(() => _isCompanyVerified = value),
+                    onChanged: (value) => setState(() => _isCompanyVerified = value),
                   ),
                   const SizedBox(height: 30),
                   ElevatedButton(
                     onPressed: _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 15),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text(
-                      "Register",
-                      style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white),
+                    child: Text(
+                      isSindhi ? "رجسٽر ٿيو" : "Register",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ],
@@ -148,7 +151,11 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
   }
 
   Widget _buildTextField(
-      TextEditingController controller, String label, IconData icon) {
+    TextEditingController controller,
+    String label,
+    IconData icon,
+    bool isSindhi,
+  ) {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
@@ -160,7 +167,7 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Please enter $label';
+          return isSindhi ? 'مھرباني ڪري $label داخل ڪريو' : 'Please enter $label';
         }
         return null;
       },

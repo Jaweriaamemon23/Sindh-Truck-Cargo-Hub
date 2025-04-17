@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:intl/intl.dart'; // Add this for formatting date
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../providers/language_provider.dart';
 
 class LiveCargoRequestsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('notifications')
@@ -18,7 +22,10 @@ class LiveCargoRequestsTab extends StatelessWidget {
         final notifications = snapshot.data?.docs ?? [];
 
         if (notifications.isEmpty) {
-          return Center(child: Text('No notifications at the moment.'));
+          return Center(
+              child: Text(isSindhi
+                  ? 'هن وقت ڪا به اطلاع موجود ناهي.'
+                  : 'No notifications at the moment.'));
         }
 
         return ListView.builder(
@@ -27,11 +34,10 @@ class LiveCargoRequestsTab extends StatelessWidget {
             final doc = notifications[index];
             final data = doc.data() as Map<String, dynamic>;
 
-            // Extract and format timestamp
             Timestamp? ts = data['timestamp'];
             String formattedTime = ts != null
                 ? DateFormat('yyyy-MM-dd hh:mm a').format(ts.toDate())
-                : 'Unknown time';
+                : (isSindhi ? 'اڻڄاتل وقت' : 'Unknown time');
 
             return Dismissible(
               key: Key(doc.id),
@@ -49,7 +55,11 @@ class LiveCargoRequestsTab extends StatelessWidget {
                     .delete();
 
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Notification dismissed")),
+                  SnackBar(
+                    content: Text(
+                      isSindhi ? "اطلاع ختم ڪئي وئي" : "Notification dismissed",
+                    ),
+                  ),
                 );
               },
               child: Padding(
@@ -62,7 +72,8 @@ class LiveCargoRequestsTab extends StatelessWidget {
                     contentPadding:
                         EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     title: Text(
-                      data['cargoDetails'] ?? 'New Cargo Request',
+                      data['cargoDetails'] ??
+                          (isSindhi ? 'نئون مال جي درخواست' : 'New Cargo Request'),
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
@@ -76,13 +87,22 @@ class LiveCargoRequestsTab extends StatelessWidget {
                         ),
                         SizedBox(height: 4),
                         Text(
-                            "From: ${data['fromLocation']} ➡ To: ${data['toLocation']}"),
+                          isSindhi
+                              ? "کان: ${data['fromLocation']} ➡ ڏانهن: ${data['toLocation']}"
+                              : "From: ${data['fromLocation']} ➡ To: ${data['toLocation']}",
+                        ),
                         SizedBox(height: 2),
-                        Text("Weight: ${data['weight']} kg"),
+                        Text(isSindhi
+                            ? "وزن: ${data['weight']} ڪلوگرام"
+                            : "Weight: ${data['weight']} kg"),
                         SizedBox(height: 2),
-                        Text("Distance: ${data['distance']} km"),
+                        Text(isSindhi
+                            ? "فاصلو: ${data['distance']} ڪلوميٽر"
+                            : "Distance: ${data['distance']} km"),
                         SizedBox(height: 2),
-                        Text("Vehicle Type: ${data['vehicleType']}"),
+                        Text(isSindhi
+                            ? "گاڏي جو قسم: ${data['vehicleType']}"
+                            : "Vehicle Type: ${data['vehicleType']}"),
                       ],
                     ),
                     trailing: Icon(Icons.local_shipping, color: Colors.blue),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import '../providers/language_provider.dart';
 
 void showAddTruckDialog(BuildContext context) {
   TextEditingController truckNumberController = TextEditingController();
@@ -13,7 +15,10 @@ void showAddTruckDialog(BuildContext context) {
     context: context,
     builder: (context) {
       return AlertDialog(
-        title: Text("Add New Truck"),
+        title: Text(
+            Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                ? "نئون ٽرڪ شامل ڪريو"
+                : "Add New Truck"),
         content: Form(
           key: formKey,
           child: Column(
@@ -21,24 +26,56 @@ void showAddTruckDialog(BuildContext context) {
             children: [
               TextFormField(
                 controller: truckNumberController,
-                decoration: InputDecoration(labelText: "Truck Number"),
-                validator: (value) =>
-                    value!.isEmpty ? "Please enter a truck number" : null,
+                decoration: InputDecoration(
+                    labelText:
+                        Provider.of<LanguageProvider>(context, listen: false)
+                                .isSindhi
+                            ? "ٽرڪ نمبر"
+                            : "Truck Number"),
+                validator: (value) => value!.isEmpty
+                    ? (Provider.of<LanguageProvider>(context, listen: false)
+                            .isSindhi
+                        ? "مهرباني ڪري ٽرڪ نمبر داخل ڪريو"
+                        : "Please enter a truck number")
+                    : null,
               ),
               TextFormField(
                 controller: truckTypeController,
-                decoration: InputDecoration(labelText: "Truck Type"),
-                validator: (value) =>
-                    value!.isEmpty ? "Please enter a truck type" : null,
+                decoration: InputDecoration(
+                    labelText:
+                        Provider.of<LanguageProvider>(context, listen: false)
+                                .isSindhi
+                            ? "ٽرڪ قسم"
+                            : "Truck Type"),
+                validator: (value) => value!.isEmpty
+                    ? (Provider.of<LanguageProvider>(context, listen: false)
+                            .isSindhi
+                        ? "مهرباني ڪري ٽرڪ قسم داخل ڪريو"
+                        : "Please enter a truck type")
+                    : null,
               ),
               TextFormField(
                 controller: capacityController,
-                decoration: InputDecoration(labelText: "Capacity (tons)"),
+                decoration: InputDecoration(
+                    labelText:
+                        Provider.of<LanguageProvider>(context, listen: false)
+                                .isSindhi
+                            ? "گنجائش (ٽن)"
+                            : "Capacity (tons)"),
                 keyboardType: TextInputType.number,
                 validator: (value) {
-                  if (value!.isEmpty) return "Please enter a capacity";
+                  if (value!.isEmpty)
+                    return (Provider.of<LanguageProvider>(context,
+                                listen: false)
+                            .isSindhi
+                        ? "مهرباني ڪري گنجائش داخل ڪريو"
+                        : "Please enter a capacity");
                   if (int.tryParse(value) == null) {
-                    return "Capacity must be a number";
+                    return (Provider.of<LanguageProvider>(context,
+                                listen: false)
+                            .isSindhi
+                        ? "گنجائش هڪ نمبر هجڻ گهرجي"
+                        : "Capacity must be a number");
                   }
                   return null;
                 },
@@ -49,7 +86,10 @@ void showAddTruckDialog(BuildContext context) {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text("Cancel"),
+            child: Text(
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? "منسوخ"
+                    : "Cancel"),
           ),
           TextButton(
             onPressed: () async {
@@ -63,7 +103,10 @@ void showAddTruckDialog(BuildContext context) {
                 Navigator.pop(context);
               }
             },
-            child: Text("Add"),
+            child: Text(
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? "شامل ڪريو"
+                    : "Add"),
           ),
         ],
       );

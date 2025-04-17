@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:provider/provider.dart';
+import 'providers/language_provider.dart';
 import 'screens/splash_screen.dart';
 
 final FirebaseMessaging messaging = FirebaseMessaging.instance;
@@ -40,16 +42,21 @@ void main() async {
     await _initializeFirebaseIfNeeded();
 
     if (!kIsWeb) {
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      FirebaseMessaging.onBackgroundMessage(
+          _firebaseMessagingBackgroundHandler);
     } else {
       print("ℹ️ Web platform detected — service worker handled in index.html.");
     }
-
   } catch (e) {
     print("❌ Firebase initialization error: $e");
   }
 
-  runApp(const MyApp());
+  runApp(
+    ChangeNotifierProvider(
+      create: (_) => LanguageProvider(),
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {

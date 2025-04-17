@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../providers/language_provider.dart';
+import 'package:provider/provider.dart';
 
 class TruckOwnerReviewsScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     if (currentUser == null) {
       print("🚫 User not logged in");
       return Scaffold(
-        appBar: AppBar(title: Text("My Reviews")),
-        body: Center(child: Text("User not logged in.")),
+        appBar: AppBar(title: Text(isSindhi ? "منهنجا جائزا" : "My Reviews")),
+        body: Center(
+            child: Text(
+                isSindhi ? "صارف لاگ ان ناهي ٿيو." : "User not logged in.")),
       );
     }
 
@@ -19,7 +25,8 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("My Reviews", style: TextStyle(color: Colors.white)),
+        title: Text(isSindhi ? "منهنجا جائزا" : "My Reviews",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -31,7 +38,10 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             print("❌ Error: ${snapshot.error}");
-            return Center(child: Text("❌ Error loading reviews."));
+            return Center(
+                child: Text(isSindhi
+                    ? "❌ جائزا لوڊ ڪرڻ ۾ غلطي."
+                    : "❌ Error loading reviews."));
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -45,7 +55,9 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
           print("📦 Reviews fetched: ${reviews.length}");
 
           if (reviews.isEmpty) {
-            return Center(child: Text("No reviews yet."));
+            return Center(
+                child:
+                    Text(isSindhi ? "ڪو به جائزو ناهي." : "No reviews yet."));
           }
 
           double totalRating = 0;
@@ -71,7 +83,7 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      "Average Rating",
+                      isSindhi ? "اوسط ريٽنگ" : "Average Rating",
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
@@ -121,7 +133,7 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
                         ),
                         child: ListTile(
                           leading: Icon(Icons.person, color: Colors.blue),
-                          title: Text("From: $from"),
+                          title: Text("${isSindhi ? "کان" : "From"}: $from"),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -146,7 +158,7 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4.0),
                                   child: Text(
-                                    "Reviewed on: ${timestamp.day}/${timestamp.month}/${timestamp.year}",
+                                    "${isSindhi ? "جائزو ڏنو ويو:" : "Reviewed on:"} ${timestamp.day}/${timestamp.month}/${timestamp.year}",
                                     style: TextStyle(
                                         fontSize: 12, color: Colors.grey),
                                   ),

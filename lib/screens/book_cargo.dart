@@ -3,26 +3,30 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert'; // ✅ This fixes jsonDecode error
+import 'dart:convert';
 import 'cargo_tracking_screen.dart';
-import 'package:http/http.dart' as http; // ✅ Required for HTTP POST
+import 'package:http/http.dart' as http;
 
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
+  final bool isSindhi = false; // Replace with actual language check
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title:
-            Text("Book Cargo Requests", style: TextStyle(color: Colors.white)),
+        title: Text(isSindhi ? "ڪارجو ڪتاب ڪريو" : "Book Cargo Requests",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: Colors.blue,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(child: Text("❌ Error loading bookings!"));
+            return Center(
+                child: Text(isSindhi
+                    ? "❌ بوڪنگس لوڊ ڪرڻ ۾ غلطي!"
+                    : "❌ Error loading bookings!"));
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -40,7 +44,10 @@ class BookCargoScreen extends StatelessWidget {
           }).toList();
 
           if (bookings.isEmpty) {
-            return Center(child: Text("No bookings available."));
+            return Center(
+                child: Text(isSindhi
+                    ? "ڪابه بوڪنگ دستياب ناهي."
+                    : "No bookings available."));
           }
 
           return ListView.builder(
@@ -57,8 +64,9 @@ class BookCargoScreen extends StatelessWidget {
 
               bool isAcceptedByAnother =
                   status == "Accepted" && acceptedBy != currentUser?.email;
-              String displayStatus =
-                  isAcceptedByAnother ? "Not Available" : status;
+              String displayStatus = isAcceptedByAnother
+                  ? (isSindhi ? "دستياب ناهي" : "Not Available")
+                  : status;
 
               return FutureBuilder<QuerySnapshot>(
                 future: FirebaseFirestore.instance
@@ -67,16 +75,19 @@ class BookCargoScreen extends StatelessWidget {
                     .limit(1)
                     .get(),
                 builder: (context, userSnapshot) {
-                  String requestedByPhone = "Loading...";
+                  String requestedByPhone =
+                      isSindhi ? "لوڊ ٿي رهيو آهي..." : "Loading...";
 
                   if (userSnapshot.connectionState == ConnectionState.done) {
                     if (userSnapshot.hasData &&
                         userSnapshot.data!.docs.isNotEmpty) {
                       var userData = userSnapshot.data!.docs.first.data()
                           as Map<String, dynamic>;
-                      requestedByPhone = userData['phone'] ?? "Not Provided";
+                      requestedByPhone = userData['phone'] ??
+                          (isSindhi ? "فراہم ناهي" : "Not Provided");
                     } else {
-                      requestedByPhone = "User not found";
+                      requestedByPhone =
+                          isSindhi ? "يوزر نٿو ملي" : "User not found";
                       print("📛 No user found with email $requestedByEmail");
                     }
                   }
@@ -102,7 +113,7 @@ class BookCargoScreen extends StatelessWidget {
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  "Cargo: ${bookingData['cargoType'] ?? 'N/A'}",
+                                  "${isSindhi ? 'ڪارجو:' : 'Cargo:'} ${bookingData['cargoType'] ?? 'N/A'}",
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -112,14 +123,19 @@ class BookCargoScreen extends StatelessWidget {
                           ),
                           SizedBox(height: 8),
                           Text(
-                              "From: ${bookingData['startCity'] ?? 'Unknown'}"),
-                          Text("To: ${bookingData['endCity'] ?? 'Unknown'}"),
-                          Text("Weight: ${bookingData['weight']} tons"),
-                          Text("Distance: ${bookingData['distance']} km"),
-                          Text("Price: Rs. ${bookingData['price']}"),
-                          Text("Phone: $requestedByPhone"),
+                              "${isSindhi ? 'کان:' : 'From:'} ${bookingData['startCity'] ?? 'Unknown'}"),
                           Text(
-                            "Status: $displayStatus",
+                              "${isSindhi ? 'تائئن:' : 'To:'} ${bookingData['endCity'] ?? 'Unknown'}"),
+                          Text(
+                              "${isSindhi ? 'وزن:' : 'Weight:'} ${bookingData['weight']} tons"),
+                          Text(
+                              "${isSindhi ? 'فاصلو:' : 'Distance:'} ${bookingData['distance']} km"),
+                          Text(
+                              "${isSindhi ? 'قيمت:' : 'Price:'} Rs. ${bookingData['price']}"),
+                          Text(
+                              "${isSindhi ? 'فون:' : 'Phone:'} $requestedByPhone"),
+                          Text(
+                            "${isSindhi ? 'حالت:' : 'Status:'} $displayStatus",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: _getStatusColor(displayStatus),
@@ -134,7 +150,8 @@ class BookCargoScreen extends StatelessWidget {
                                   onPressed: () =>
                                       _acceptCargo(bookingId, context),
                                   icon: Icon(Icons.check, color: Colors.white),
-                                  label: Text("Accept"),
+                                  label:
+                                      Text(isSindhi ? "قبول ڪريو" : "Accept"),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       foregroundColor: Colors.white),
@@ -143,7 +160,7 @@ class BookCargoScreen extends StatelessWidget {
                                   onPressed: () =>
                                       _rejectCargo(bookingId, context),
                                   icon: Icon(Icons.cancel, color: Colors.white),
-                                  label: Text("Reject"),
+                                  label: Text(isSindhi ? "رد ڪريو" : "Reject"),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.red,
                                       foregroundColor: Colors.white),
@@ -160,7 +177,9 @@ class BookCargoScreen extends StatelessWidget {
                                       _markAsDelivered(bookingId, context),
                                   icon: Icon(Icons.check_circle,
                                       color: Colors.white),
-                                  label: Text("Mark as Delivered"),
+                                  label: Text(isSindhi
+                                      ? "پورو ٿي ويو"
+                                      : "Mark as Delivered"),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color.fromARGB(
                                           255, 56, 145, 218),
@@ -179,7 +198,7 @@ class BookCargoScreen extends StatelessWidget {
                                   },
                                   icon: Icon(Icons.location_on,
                                       color: Colors.white),
-                                  label: Text("Track"),
+                                  label: Text(isSindhi ? "ٽريڪ ڪريو" : "Track"),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: const Color.fromARGB(
                                           255, 146, 96, 231),
@@ -318,7 +337,9 @@ class BookCargoScreen extends StatelessWidget {
 
       await sendNotificationToCargoOwner(
         phone: phone,
-        title: "Your cargo has been accepted!",
+        title: isSindhi
+            ? "توهان جو ڪارجو قبول ٿي ويو آهي!"
+            : "Your cargo has been accepted!",
         body:
             "$cargoType from $start to $end has been accepted by a truck owner.",
       );
@@ -334,56 +355,42 @@ class BookCargoScreen extends StatelessWidget {
         FirebaseFirestore.instance.collection('bookings').doc(bookingId);
 
     try {
-      final bookingSnapshot = await bookingRef.get();
-      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
-
-      final email = bookingData['email'];
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      final phone = userSnapshot.docs.isNotEmpty
-          ? userSnapshot.docs.first.data()['phone'] ?? ''
-          : '';
-
       await bookingRef.update({
-        'rejectedBy': FieldValue.arrayUnion([currentUser!.email]),
+        'status': 'Rejected',
+        'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
 
-      print("🚫 Cargo Rejected!");
-
-      final cargoType = bookingData['cargoType'];
-      final start = bookingData['startCity'];
-      final end = bookingData['endCity'];
-
-      await sendNotificationToCargoOwner(
-        phone: phone,
-        title: "Cargo rejected ❌",
-        body: "$cargoType from $start to $end was rejected by a truck owner.",
-      );
+      print("✅ Cargo Rejected!");
     } catch (e) {
       print("❌ Error rejecting cargo: $e");
     }
   }
 
-  void _markAsDelivered(String bookingId, BuildContext context) {
-    if (currentUser == null) return;
+  void _markAsDelivered(String bookingId, BuildContext context) async {
+    final bookingRef =
+        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
 
-    FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'status': 'Delivered',
-    }).then((_) {
+    try {
+      await bookingRef.update({
+        'status': 'Delivered',
+      });
+
       print("✅ Cargo Marked as Delivered!");
-    }).catchError((error) {
-      print("❌ Error marking cargo as delivered: $error");
-    });
+    } catch (e) {
+      print("❌ Error marking cargo as delivered: $e");
+    }
   }
 
-  Color _getStatusColor(String? status) {
-    if (status == "Accepted") return Colors.green;
-    if (status == "Not Available") return Colors.grey;
-    if (status == "Delivered") return Colors.blue;
-    return Colors.orange;
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Accepted':
+        return Colors.green;
+      case 'Rejected':
+        return Colors.red;
+      case 'Delivered':
+        return Colors.blue;
+      default:
+        return Colors.orange;
+    }
   }
 }

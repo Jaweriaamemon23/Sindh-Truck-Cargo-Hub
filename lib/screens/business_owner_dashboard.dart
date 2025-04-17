@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'business_owner_functions.dart';
+import '../providers/language_provider.dart'; // Import LanguageProvider
 
 class BusinessOwnerDashboard extends StatefulWidget {
   @override
@@ -39,10 +41,18 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
     return [
       isLoading
           ? Center(child: CircularProgressIndicator())
-          : BusinessOwnerFunctions.getTrackShipmentScreen() ??
+          : BusinessOwnerFunctions.getTrackShipmentScreen(context) ??
               Center(child: Text("Error: Track Shipment screen is null")),
-      Center(child: Text('View Invoice')),
-      Center(child: Text('View Shipment Status')),
+      Center(
+          child: Text(
+              Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                  ? "بلانس ڏسو"
+                  : "View Invoice")),
+      Center(
+          child: Text(
+              Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                  ? "پٽڻ جي حيثيت ڏسو"
+                  : "View Shipment Status")),
     ];
   }
 
@@ -50,7 +60,10 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Business Owner Dashboard'),
+        title: Text(
+            Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                ? "ڪاروباري مالڪ ڊيش بورڊ"
+                : "Business Owner Dashboard"),
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
@@ -75,18 +88,27 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
-            label: 'Track Shipment',
+            label:
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? 'پٽڻ ٽريڪ'
+                    : 'Track Shipment',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.receipt),
-            label: 'View Invoice',
+            label:
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? 'بلانس ڏسو'
+                    : 'View Invoice',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            label: 'View Shipment Status',
+            label:
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? 'پٽڻ جي حيثيت ڏسو'
+                    : 'View Shipment Status',
           ),
         ],
       ),

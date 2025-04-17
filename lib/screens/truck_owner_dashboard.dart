@@ -5,6 +5,8 @@ import 'book_cargo.dart';
 import 'my_trucks.dart';
 import 'login_screen.dart';
 import 'cargo_requests_tab.dart';
+import 'package:provider/provider.dart';
+import 'package:sindh_truck_cargo_hub/providers/language_provider.dart'; // Import your LanguageProvider
 
 class TruckOwnerDashboard extends StatefulWidget {
   @override
@@ -40,14 +42,20 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Truck Owner Dashboard',
-            style: TextStyle(color: Colors.white)),
+        title: Text(
+          Provider.of<LanguageProvider>(context).isSindhi
+              ? 'ٽرڪ مالڪ ڊيش بورڊ'
+              : 'Truck Owner Dashboard',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blue.shade800,
         actions: [
           IconButton(
             icon: Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
-            tooltip: 'Logout',
+            tooltip: Provider.of<LanguageProvider>(context).isSindhi
+                ? 'لاگ آئوٽ'
+                : 'Logout',
           ),
         ],
       ),
@@ -58,22 +66,30 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
         backgroundColor: Colors.blue.shade800,
         selectedItemColor: Colors.blueGrey.shade400,
         unselectedItemColor: Colors.blue.shade300,
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
-            label: 'My Trucks',
+            label: Provider.of<LanguageProvider>(context).isSindhi
+                ? 'منهنجا ٽرڪ'
+                : 'My Trucks',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book),
-            label: 'Book Cargo',
+            label: Provider.of<LanguageProvider>(context).isSindhi
+                ? 'ڪارجو بڪ ڪريو'
+                : 'Book Cargo',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.star),
-            label: 'Reviews',
+            label: Provider.of<LanguageProvider>(context).isSindhi
+                ? 'جائزا'
+                : 'Reviews',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.notifications),
-            label: 'Notifications',
+            label: Provider.of<LanguageProvider>(context).isSindhi
+                ? 'نوٽيفڪيشن'
+                : 'Notifications',
           ),
         ],
       ),

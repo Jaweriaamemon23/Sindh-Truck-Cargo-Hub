@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // ✅ Import provider
 import 'login_screen.dart';
 import 'cargo_tracking_screen.dart'; // Import the CargoTrackingScreen
+import '../providers/language_provider.dart'; // ✅ Import the LanguageProvider
 
 class BusinessOwnerFunctions {
   static List<Map<String, dynamic>> bookings = [];
@@ -73,9 +75,15 @@ class BusinessOwnerFunctions {
   }
 
   // Returns the screen for the 'Track Shipment' tab
-  static Widget getTrackShipmentScreen() {
+  static Widget getTrackShipmentScreen(BuildContext context) {
     if (bookings.isEmpty) {
-      return Center(child: Text("No bookings found."));
+      return Center(
+        child: Text(
+          Provider.of<LanguageProvider>(context, listen: false).isSindhi
+              ? "ڪو به بڪنگ نه مليو."
+              : "No bookings found.", // Dynamic text for no bookings found
+        ),
+      );
     }
 
     return ListView.builder(
@@ -97,7 +105,11 @@ class BusinessOwnerFunctions {
               "${booking['startCity']} ➜ ${booking['endCity']}",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text("Accepted By: ${booking['acceptedBy']}"),
+            subtitle: Text(
+              Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                  ? "قبول ڪيو ويو: ${booking['acceptedBy']}"
+                  : "Accepted By: ${booking['acceptedBy']}", // Dynamic text for accepted by
+            ),
             onTap: () {
               // Pass the actual bookingId
               Navigator.push(
