@@ -4,6 +4,7 @@ import 'package:sindh_truck_cargo_hub/screens/truck_owner_reviews.dart';
 import 'book_cargo.dart';
 import 'my_trucks.dart';
 import 'login_screen.dart';
+import 'cargo_requests_tab.dart';
 
 class TruckOwnerDashboard extends StatefulWidget {
   @override
@@ -17,8 +18,7 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
     MyTrucksScreen(), // ✅ Now calling it as a separate screen
     BookCargoScreen(),
     TruckOwnerReviewsScreen(), // ✅ Reviews Screen
-    Center(child: Text('View Notifications', style: TextStyle(fontSize: 20))),
-   
+    LiveCargoRequestsTab(),
   ];
 
   void _onItemTapped(int index) {
@@ -63,7 +63,6 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
             icon: Icon(Icons.local_shipping),
             label: 'My Trucks',
           ),
-          
           BottomNavigationBarItem(
             icon: Icon(Icons.book),
             label: 'Book Cargo',

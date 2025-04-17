@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-// Replace with your actual tracking screen import
+import 'package:googleapis_auth/auth_io.dart' as auth;
+import 'package:flutter/services.dart' show rootBundle;
+import 'dart:convert'; // ✅ This fixes jsonDecode error
 import 'cargo_tracking_screen.dart';
+import 'package:http/http.dart' as http; // ✅ Required for HTTP POST
 
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -198,29 +200,172 @@ class BookCargoScreen extends StatelessWidget {
     );
   }
 
-  void _acceptCargo(String bookingId, BuildContext context) {
-    if (currentUser == null) return;
+  Future<String?> getAccessToken() async {
+    try {
+      final String serviceAccountJson =
+          await rootBundle.loadString("assets/firebase-admin-key.json");
 
-    FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'status': 'Accepted',
-      'acceptedBy': currentUser!.email,
-    }).then((_) {
-      print("✅ Cargo Accepted!");
-    }).catchError((error) {
-      print("❌ Error accepting cargo: $error");
-    });
+      final Map<String, dynamic> credentials = jsonDecode(serviceAccountJson);
+      final accountCredentials =
+          auth.ServiceAccountCredentials.fromJson(credentials);
+
+      final client = await auth.clientViaServiceAccount(
+        accountCredentials,
+        ["https://www.googleapis.com/auth/firebase.messaging"],
+      );
+
+      return client.credentials.accessToken.data;
+    } catch (e) {
+      print("❌ Error getting OAuth token: $e");
+      return null;
+    }
   }
 
-  void _rejectCargo(String bookingId, BuildContext context) {
+  Future<void> sendNotificationToCargoOwner({
+    required String phone,
+    required String title,
+    required String body,
+  }) async {
+    try {
+      final accessToken = await getAccessToken();
+      if (accessToken == null) {
+        print("❌ Failed to get OAuth token.");
+        return;
+      }
+
+      // Query using phone number
+      final snapshot = await FirebaseFirestore.instance
+          .collection('user_fcm_tokens')
+          .where('phone', isEqualTo: phone)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print("❌ No FCM token found for phone: $phone");
+        return;
+      }
+
+      for (var doc in snapshot.docs) {
+        final token = doc.data()['fcmToken'];
+        if (token == null || token.isEmpty) continue;
+
+        final payload = {
+          "message": {
+            "token": token,
+            "notification": {
+              "title": title,
+              "body": body,
+            },
+            "data": {
+              "type": "cargo_response",
+              "action": title.contains("accepted") ? "accepted" : "rejected",
+            },
+          }
+        };
+
+        final response = await http.post(
+          Uri.parse(
+              "https://fcm.googleapis.com/v1/projects/sindhtruckcargohub/messages:send"),
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer $accessToken",
+          },
+          body: jsonEncode(payload),
+        );
+
+        if (response.statusCode == 200) {
+          print("✅ Notification sent to: $phone");
+        } else {
+          print("❌ FCM error: ${response.body}");
+        }
+      }
+    } catch (e) {
+      print("❌ Error sending notification: $e");
+    }
+  }
+
+  void _acceptCargo(String bookingId, BuildContext context) async {
     if (currentUser == null) return;
 
-    FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
-      'rejectedBy': FieldValue.arrayUnion([currentUser!.email]),
-    }).then((_) {
+    final bookingRef =
+        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
+
+    try {
+      final bookingSnapshot = await bookingRef.get();
+      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
+
+      // Get phone number of cargo owner
+      final email = bookingData['email'];
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      final phone = userSnapshot.docs.isNotEmpty
+          ? userSnapshot.docs.first.data()['phone'] ?? ''
+          : '';
+
+      await bookingRef.update({
+        'status': 'Accepted',
+        'acceptedBy': currentUser!.email,
+      });
+
+      print("✅ Cargo Accepted!");
+
+      final cargoType = bookingData['cargoType'];
+      final start = bookingData['startCity'];
+      final end = bookingData['endCity'];
+
+      await sendNotificationToCargoOwner(
+        phone: phone,
+        title: "Your cargo has been accepted!",
+        body:
+            "$cargoType from $start to $end has been accepted by a truck owner.",
+      );
+    } catch (e) {
+      print("❌ Error accepting cargo: $e");
+    }
+  }
+
+  void _rejectCargo(String bookingId, BuildContext context) async {
+    if (currentUser == null) return;
+
+    final bookingRef =
+        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
+
+    try {
+      final bookingSnapshot = await bookingRef.get();
+      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
+
+      final email = bookingData['email'];
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      final phone = userSnapshot.docs.isNotEmpty
+          ? userSnapshot.docs.first.data()['phone'] ?? ''
+          : '';
+
+      await bookingRef.update({
+        'rejectedBy': FieldValue.arrayUnion([currentUser!.email]),
+      });
+
       print("🚫 Cargo Rejected!");
-    }).catchError((error) {
-      print("❌ Error rejecting cargo: $error");
-    });
+
+      final cargoType = bookingData['cargoType'];
+      final start = bookingData['startCity'];
+      final end = bookingData['endCity'];
+
+      await sendNotificationToCargoOwner(
+        phone: phone,
+        title: "Cargo rejected ❌",
+        body: "$cargoType from $start to $end was rejected by a truck owner.",
+      );
+    } catch (e) {
+      print("❌ Error rejecting cargo: $e");
+    }
   }
 
   void _markAsDelivered(String bookingId, BuildContext context) {

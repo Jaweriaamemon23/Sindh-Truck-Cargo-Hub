@@ -15,7 +15,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
   final TextEditingController _distanceController =
       TextEditingController(text: "0");
   final TextEditingController _businessOwnerIdController =
-      TextEditingController(); // ✅ For business owner ID
+      TextEditingController();
 
   String? selectedCargoType;
   String? selectedStartCity;
@@ -30,37 +30,51 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
 
   double? estimatedPrice;
 
-  // Predefined list of distances with city-to-city info
   final List<Map<String, dynamic>> predefinedDistances = [
-    {"route": "Karachi → Hyderabad", "distance": 167},
-    {"route": "Karachi → Larkana", "distance": 380},
-    {"route": "Karachi → Sukkur", "distance": 450},
-    {"route": "Hyderabad → Larkana", "distance": 210},
-    {"route": "Hyderabad → Sukkur", "distance": 280},
-    {"route": "Larkana → Sukkur", "distance": 125},
+    {"route": "Karachi → Hyderabad", "distance": 165},
+    {"route": "Karachi → Larkana", "distance": 455},
+    {"route": "Karachi → Sukkur", "distance": 475},
+    {"route": "Hyderabad → Larkana", "distance": 315},
+    {"route": "Hyderabad → Sukkur", "distance": 335},
+    {"route": "Larkana → Sukkur", "distance": 85},
   ];
 
   void _calculatePrice() {
-    int weight = int.tryParse(_weightController.text) ?? 0;
+    double weight = double.tryParse(_weightController.text) ?? 0;
     int distance = int.tryParse(_distanceController.text) ?? 0;
 
-    if (weight > 0 && distance > 0) {
-      setState(() {
-        estimatedPrice = (weight * 2.5) + (distance * 1.5);
-      });
-    } else {
+    if (weight <= 0 || distance <= 0) {
       setState(() {
         estimatedPrice = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Please enter valid weight and distance'),
-            backgroundColor: Colors.red),
+          content: Text('Please enter valid weight and distance'),
+          backgroundColor: Colors.red,
+        ),
       );
+      return;
     }
+
+    double baseRatePerKm = 15.0;
+    double weightSurcharge = 0;
+
+    if (weight > 2 && weight <= 5) {
+      weightSurcharge = 0.05;
+    } else if (weight > 5 && weight <= 10) {
+      weightSurcharge = 0.1;
+    } else if (weight > 10) {
+      weightSurcharge = 0.2;
+    }
+
+    double price = distance * baseRatePerKm;
+    price += price * weightSurcharge;
+
+    setState(() {
+      estimatedPrice = price;
+    });
   }
 
-// Store Notification in Firestore for future tracking
   Future<void> storeNotificationInFirestore({
     required String cargoDetails,
     required String weight,
@@ -86,6 +100,12 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
 
   Future<void> _requestBooking() async {
     User? user = FirebaseAuth.instance.currentUser;
+    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user!.uid)
+        .get();
+
+    final currentUserPhone = userSnapshot.get('phone') ?? '';
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -113,7 +133,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
 
     String businessOwnerId = _businessOwnerIdController.text.trim();
 
-    // ✅ Validate Business Owner UID & Role
     DocumentSnapshot ownerSnapshot = await FirebaseFirestore.instance
         .collection('users')
         .doc(businessOwnerId)
@@ -141,7 +160,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       return;
     }
 
-    // ✅ Store booking
     await FirebaseFirestore.instance.collection('bookings').add({
       'cargoType': selectedCargoType,
       'startCity': selectedStartCity,
@@ -152,33 +170,32 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       'email': user.email,
       'timestamp': FieldValue.serverTimestamp(),
       'transporterId': user.uid,
-      'businessOwnerId': businessOwnerId, // ✅ Store for tracking
+      'businessOwnerId': businessOwnerId,
+      'phone': currentUserPhone, // ✅ new line added here
       'status': 'Pending',
     });
 
-    // ✅ Debugging Statements for Notification Trigger
     print("🚀 Triggering push notification to truck owners...");
-// ✅ Send FCM Notification to Truck Owners
+
     await sendFCMNotificationToTruckOwners(
       cargoDetails: selectedCargoType ?? "Unknown Cargo",
       weight: _weightController.text,
       fromLocation: selectedStartCity ?? "Unknown",
       toLocation: selectedEndCity ?? "Unknown",
       distance: _distanceController.text,
-      vehicleType: 'Truck', // You can replace with dynamic if needed
+      vehicleType: 'Truck',
     );
     print("✅ Notification sent to truck owners!");
 
-// ✅ Store Notification in Firestore for future tracking
     await storeNotificationInFirestore(
       cargoDetails: selectedCargoType ?? "Unknown Cargo",
       weight: _weightController.text,
       fromLocation: selectedStartCity ?? "Unknown",
       toLocation: selectedEndCity ?? "Unknown",
       distance: _distanceController.text,
-      vehicleType: 'Truck', // Replace with dynamic if needed
+      vehicleType: 'Truck',
     );
-    // ✅ Show confirmation message to user
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Booking Requested Successfully!'),
@@ -186,7 +203,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       ),
     );
 
-    // ✅ Reset the form after successful booking request
     setState(() {
       selectedCargoType = null;
       selectedStartCity = null;
@@ -197,7 +213,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       estimatedPrice = null;
     });
 
-    // ✅ Close the current screen after booking request
     Navigator.pop(context);
   }
 
@@ -228,7 +243,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     );
   }
 
-  // Function to show distance chart dialog with updated list
   void _showDistanceChart() {
     showDialog(
       context: context,
@@ -356,7 +370,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
   }
 
   Widget _buildWeightInput() {
-    return _buildInputWithButtons('Cargo Weight (kg)', _weightController);
+    return _buildInputWithButtons('Cargo Weight (tons)', _weightController);
   }
 
   Widget _buildDistanceInput() {
@@ -371,7 +385,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
           children: [
             IconButton(
               icon: Icon(Icons.list, color: Colors.blue),
-              onPressed: _showDistanceChart, // Show distance chart when clicked
+              onPressed: _showDistanceChart,
             ),
             SizedBox(
               width: 60,
