@@ -1,20 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart'; // Required for context.watch
 import 'reviews.dart';
-import 'package:provider/provider.dart';  // Add this import for Provider
-
-// Language Provider
-class LanguageProvider with ChangeNotifier {
-  bool _isSindhi = false;
-
-  bool get isSindhi => _isSindhi;
-
-  void toggleLanguage() {
-    _isSindhi = !_isSindhi;
-    notifyListeners();
-  }
-}
+import '../providers/language_provider.dart'; // Make sure you import your language provider
 
 class MyCargoScreen extends StatefulWidget {
   @override
@@ -36,17 +25,23 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
   }
 
   void _showTruckOwnerDetails(String status, String acceptedBy) {
+    final isSindhi = context.read<LanguageProvider>().isSindhi;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('$status Info'),
+          title: Text(isSindhi ? '$status بابت ڄاڻ' : '$status Info'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "${status == 'Delivered' ? 'Delivered by:' : 'Accepted by:'}",
+                isSindhi
+                    ? (status == 'Delivered' ? 'پهچايو ويو :' : 'منظور ڪندڙ :')
+                    : (status == 'Delivered'
+                        ? 'Delivered by:'
+                        : 'Accepted by:'),
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 4),
@@ -58,7 +53,7 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                   _showTruckOwnerReviews(acceptedBy);
                 },
                 icon: Icon(Icons.rate_review),
-                label: Text("Show Reviews"),
+                label: Text(isSindhi ? "نظرثاني ڏسو" : "Show Reviews"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue.shade800,
                   foregroundColor: Colors.white,
@@ -69,7 +64,7 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("Close"),
+              child: Text(isSindhi ? "بند ڪريو" : "Close"),
             ),
           ],
         );
@@ -78,11 +73,14 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
   }
 
   void _showTruckOwnerReviews(String truckOwnerEmail) {
+    final isSindhi = context.read<LanguageProvider>().isSindhi;
+
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text('Truck Owner Reviews'),
+          title:
+              Text(isSindhi ? 'ٽرڪ ڊرائيور جي نظرثاني' : 'Truck Owner Reviews'),
           content: Container(
             width: double.maxFinite,
             child: StreamBuilder<QuerySnapshot>(
@@ -96,7 +94,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Text('No reviews found for this truck owner.');
+                  return Text(isSindhi
+                      ? 'هن ٽرڪ ڊرائيور لاءِ ڪا به نظرثاني نه ملي.'
+                      : 'No reviews found for this truck owner.');
                 }
 
                 var reviews = snapshot.data!.docs;
@@ -113,7 +113,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
 
                     return ListTile(
                       leading: Icon(Icons.star, color: Colors.amber),
-                      title: Text("Rating: ${rating.toStringAsFixed(1)}"),
+                      title: Text(isSindhi
+                          ? "درجه بندي: ${rating.toStringAsFixed(1)}"
+                          : "Rating: ${rating.toStringAsFixed(1)}"),
                       subtitle: Text("$comment\n${date.toLocal()}"),
                     );
                   },
@@ -124,7 +126,7 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text("Close"),
+              child: Text(isSindhi ? "بند ڪريو" : "Close"),
             ),
           ],
         );
@@ -134,14 +136,14 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
+    final isSindhi = context.watch<LanguageProvider>().isSindhi;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Text(
-            languageProvider.isSindhi ? "منهنجي مال" : "My Cargo",
+            isSindhi ? "منهنجو ڪارگو" : "My Cargo",
             style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -160,8 +162,8 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Text(
-                      languageProvider.isSindhi
-                          ? "توهان اڃا تائين ڪا مال درخواست ناهي ڪئي."
+                      isSindhi
+                          ? "توهان اڃا تائين ڪا به ڪارگو درخواست نه ڏني آهي."
                           : "You have not requested any cargo yet.",
                       style:
                           TextStyle(fontSize: 18, color: Colors.blue.shade900),
@@ -209,8 +211,8 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 color: Colors.blue.shade900),
                             title: Text(cargoType),
                             subtitle: Text(
-                              languageProvider.isSindhi
-                                  ? "آغاز: $startCity ➝ اختتام: $endCity\nوزن: ${weight.toString()} ٽن"
+                              isSindhi
+                                  ? "کان: $startCity ➝ ڏانهن: $endCity\nوزن: ${weight.toString()} ٽن"
                                   : "From: $startCity ➝ To: $endCity\nWeight: ${weight.toString()} tons",
                             ),
                             trailing: acceptedBy != null
@@ -220,11 +222,17 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                           status, acceptedBy);
                                     },
                                     child: Container(
-                                      width: 120, // Constrained width
+                                      width: 120,
                                       child: Chip(
                                         backgroundColor: statusColor,
                                         label: Text(
-                                          status,
+                                          isSindhi
+                                              ? (status == 'Delivered'
+                                                  ? 'پهچايو ويو'
+                                                  : status == 'Accepted'
+                                                      ? 'قبول ڪيو ويو'
+                                                      : 'بڪ ڪيو ويو')
+                                              : status,
                                           style: TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -234,11 +242,17 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                     ),
                                   )
                                 : SizedBox(
-                                    width: 120, // Same width constraint
+                                    width: 120,
                                     child: Chip(
                                       backgroundColor: statusColor,
                                       label: Text(
-                                        status,
+                                        isSindhi
+                                            ? (status == 'Delivered'
+                                                ? 'پهچايو ويو'
+                                                : status == 'Accepted'
+                                                    ? 'قبول ڪيو ويو'
+                                                    : 'بڪ ڪيو ويو')
+                                            : status,
                                         style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.bold,
@@ -246,8 +260,8 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                       ),
                                     ),
                                   ),
-                            contentPadding: EdgeInsets.symmetric(
-                                horizontal: 16.0), // Adjust padding
+                            contentPadding:
+                                EdgeInsets.symmetric(horizontal: 16.0),
                             minVerticalPadding: 8.0,
                             isThreeLine: false,
                             dense: true,
@@ -269,11 +283,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                     );
                                   },
                                   icon: Icon(Icons.star, color: Colors.amber),
-                                  label: Text(
-                                    languageProvider.isSindhi
-                                        ? "جائزو ڇڏڻ"
-                                        : "Leave a Review",
-                                  ),
+                                  label: Text(isSindhi
+                                      ? "نظرثاني ڪريو"
+                                      : "Leave a Review"),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.blue.shade800,
                                     foregroundColor: Colors.white,
@@ -288,11 +300,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                               child: Align(
                                 alignment: Alignment.centerRight,
                                 child: Chip(
-                                  label: Text(
-                                    languageProvider.isSindhi
-                                        ? "جائزو ڏنو ويو"
-                                        : "Reviewed",
-                                  ),
+                                  label: Text(isSindhi
+                                      ? "نظرثاني ڪئي وئي"
+                                      : "Reviewed"),
                                   backgroundColor: Colors.grey.shade200,
                                   avatar: Icon(Icons.check_circle,
                                       color: Colors.green),

@@ -13,7 +13,7 @@ class AvailableTrucksScreen extends StatelessWidget {
           // Title with translation
           Text(
             Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                ? "دستياب ٽرڪن"
+                ? "دستياب ٽرڪ"
                 : "Available Trucks",
             style: TextStyle(
                 fontSize: 22,

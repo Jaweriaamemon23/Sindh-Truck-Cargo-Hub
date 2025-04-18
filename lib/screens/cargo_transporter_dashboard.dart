@@ -6,8 +6,6 @@ import 'available_trucks.dart';
 import 'my_cargo.dart';
 import 'cargo_tracking_screen.dart'; // <-- Import the new screen
 import 'login_screen.dart'; // Ensure you have a login screen for redirection
-import 'package:provider/provider.dart';
-import 'package:sindh_truck_cargo_hub/providers/language_provider.dart' as langProvider; // Using alias
 
 class CargoTransporterDashboard extends StatefulWidget {
   @override
@@ -18,43 +16,50 @@ class CargoTransporterDashboard extends StatefulWidget {
 class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
   int _selectedIndex = 0;
 
+  // Dynamic list of available bookings for the logged-in user
   List<String> availableBookings = [];
   String? selectedBookingId;
 
+  // Screens for each tab
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _screens = [
-      MyCargoScreen(),
-      AvailableTrucksScreen(),
-      CargoTrackingScreen(),
+      MyCargoScreen(), // ✅ My Cargo Tab
+      AvailableTrucksScreen(), // ✅ Available Trucks Tab
+      CargoTrackingScreen(), // ✅ Cargo Tracking Tab
     ];
-    fetchUserBookings();
+    fetchUserBookings(); // Fetch the user's bookings when the dashboard loads
   }
 
+  // Fetch available bookings for the logged-in user
   Future<void> fetchUserBookings() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('users')
+          .collection('users') // Assuming each user has their own bookings
           .doc(userId)
-          .collection('bookings')
+          .collection('bookings') // Fetch bookings for the user
           .get();
 
       setState(() {
-        availableBookings = querySnapshot.docs.map((doc) => doc.id).toList();
+        availableBookings = querySnapshot.docs
+            .map((doc) => doc.id) // Booking ID is used as the document ID
+            .toList();
       });
     }
   }
 
+  // Handle bottom navigation bar item selection
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
+  // Logout function to sign out from Firebase and navigate to login screen
   void _logout() async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
@@ -65,6 +70,7 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
     );
   }
 
+  // Function to handle booking selection (updated)
   void selectBooking(String? bookingId) {
     setState(() {
       selectedBookingId = bookingId;
@@ -73,26 +79,15 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(isSindhi ? 'ڪارگو ٽرانسپورٽر ڊيش بورڊ' : 'Cargo Transporter Dashboard'),
+        title: const Text('Cargo Transporter Dashboard'),
         backgroundColor: Colors.blue.shade900,
         actions: [
-          // Language Toggle Button
-          IconButton(
-            icon: Icon(isSindhi ? Icons.language : Icons.translate),
-            onPressed: () {
-              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
-            },
-            tooltip: isSindhi ? 'ٻولي تبديل ڪريو' : 'Change Language',
-          ),
-          // Logout button
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
-            tooltip: isSindhi ? 'سائن آئوٽ' : 'Logout',
+            tooltip: 'Logout',
           ),
         ],
       ),
@@ -106,6 +101,8 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
         ),
         child: Column(
           children: [
+            // Dropdown for selecting booking (only visible in Cargo Tracking Tab)
+
             Expanded(child: _screens[_selectedIndex]),
           ],
         ),
@@ -116,31 +113,32 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
         selectedItemColor: Colors.white,
         backgroundColor: Colors.blue.shade900,
         unselectedItemColor: Colors.white60,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.inbox),
-            label: isSindhi ? 'منهنجو ڪارگو' : 'My Cargo',
+            label: 'My Cargo',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
-            label: isSindhi ? 'دستياب ٽرڪون' : 'Available Trucks',
+            label: 'Available Trucks',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.location_on),
-            label: isSindhi ? 'ڪارگو جي نگراني' : 'Cargo Tracking',
+            label: 'Cargo Tracking',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade900,
         onPressed: () {
+          // Navigate to the Cargo Details Input screen
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => CargoDetailsScreen()),
           );
         },
         child: const Icon(Icons.add, size: 28, color: Colors.white),
-        tooltip: isSindhi ? 'نئون ڪارگو شامل ڪريو' : 'Add Cargo',
+        tooltip: 'Add Cargo',
       ),
     );
   }

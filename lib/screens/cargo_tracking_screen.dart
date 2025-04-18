@@ -69,6 +69,9 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
           'endCity': data['endCity'] ?? 'Unknown',
           'status': data['status'] ?? 'Unknown',
           'acceptedBy': data['acceptedBy'] ?? 'Unknown',
+          'cargoType': data['cargoType'] ?? 'Unknown',
+          'weight': data['weight']?.toString() ??
+              '0', // Converts to string if it's numeric
         };
       }).toList();
 
@@ -315,19 +318,39 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
           }).toList();
         },
         items: bookingDetails.map((booking) {
+          // Print the whole booking map for debugging
+          print('[DEBUG] Full booking data: $booking');
+
+          // Print individual fields explicitly
+          print('[DEBUG] cargoType: ${booking['cargoType']}');
+          print('[DEBUG] weight: ${booking['weight']}');
+          print('[DEBUG] startCity: ${booking['startCity']}');
+          print('[DEBUG] endCity: ${booking['endCity']}');
+          print('[DEBUG] acceptedBy: ${booking['acceptedBy']}');
+          print('[DEBUG] status: ${booking['status']}');
+          print('------------------------------------------------------');
+
           return DropdownMenuItem<String>(
             value: booking['id'],
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${booking['startCity']} → ${booking['endCity']}',
+                  '${booking['cargoType']?.toString() ?? 'Unknown'} '
+                  '(${booking['weight']?.toString() ?? '0'} tons)',
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 SizedBox(height: 4),
-                Text('Accepted By: ${booking['acceptedBy']}'),
-                Text('Status: ${booking['status']}',
-                    style: TextStyle(fontStyle: FontStyle.italic)),
+                Text(
+                    '${booking['startCity'] ?? 'Unknown'} → ${booking['endCity'] ?? 'Unknown'}'),
+                Text(
+                    'Accepted By: ${booking['acceptedBy'] ?? 'Not yet accepted'}'),
+                Text(
+                  'Status: ${booking['status'] ?? 'Pending'}',
+                  style: TextStyle(fontStyle: FontStyle.italic),
+                ),
+                SizedBox(height: 8),
+                Divider(thickness: 2),
               ],
             ),
           );

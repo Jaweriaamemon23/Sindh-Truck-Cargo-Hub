@@ -7,7 +7,8 @@ import '../providers/language_provider.dart';
 class CargoTransporterForm extends StatefulWidget {
   final Map<String, String> userData;
 
-  const CargoTransporterForm({required this.userData, Key? key}) : super(key: key);
+  const CargoTransporterForm({required this.userData, Key? key})
+      : super(key: key);
 
   @override
   _CargoTransporterFormState createState() => _CargoTransporterFormState();
@@ -57,21 +58,29 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
 
         DocumentSnapshot snapshot = await cargoRef.get();
         if (snapshot.exists) {
-          print("[CONFIRMED] Firestore successfully saved the subcollection data!");
+          print(
+              "[CONFIRMED] Firestore successfully saved the subcollection data!");
         } else {
           print("[ERROR] Firestore DID NOT save the subcollection data! 🚨");
         }
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Registered successfully! Please log in.')),
+          SnackBar(
+              content: Text(
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'ڪاميابي سان رجسٽر ٿيو! مهرباني ڪري لاگ ان ٿيو.'
+                      : 'Registered successfully! Please log in.')),
         );
 
         Navigator.pushReplacement(
             context, MaterialPageRoute(builder: (context) => LoginScreen()));
       } catch (e) {
         print("❌ Firestore error: $e");
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Error saving data: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                    ? 'ڊيٽا محفوظ ڪرڻ ۾ نقص: $e'
+                    : 'Error saving data: $e')));
       }
     }
   }
@@ -82,13 +91,16 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(isSindhi ? "ڪارگو ٽرانسپورٽر تفصيلات" : "Cargo Transporter Details"),
+        title: Text(isSindhi
+            ? "ڪارگو ٽرانسپورٽر تفصيلات"
+            : "Cargo Transporter Details"),
         backgroundColor: Colors.blueAccent,
         actions: [
           IconButton(
             icon: const Icon(Icons.language),
             onPressed: () {
-              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
+              Provider.of<LanguageProvider>(context, listen: false)
+                  .toggleLanguage();
             },
           ),
         ],
@@ -97,7 +109,8 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
         padding: const EdgeInsets.all(24.0),
         child: Card(
           elevation: 8,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -120,17 +133,22 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
                   ),
                   const SizedBox(height: 16),
                   SwitchListTile(
-                    title: Text(isSindhi ? "ڇا ڪمپني تصديق ٿيل آهي؟" : "Is Company Verified?"),
+                    title: Text(isSindhi
+                        ? "ڇا ڪمپني تصديق ٿيل آهي؟"
+                        : "Is Company Verified?"),
                     value: _isCompanyVerified,
-                    onChanged: (value) => setState(() => _isCompanyVerified = value),
+                    onChanged: (value) =>
+                        setState(() => _isCompanyVerified = value),
                   ),
                   const SizedBox(height: 30),
                   ElevatedButton(
                     onPressed: _submitForm,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
-                      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 40, vertical: 15),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(
                       isSindhi ? "رجسٽر ٿيو" : "Register",
@@ -167,7 +185,9 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return isSindhi ? 'مھرباني ڪري $label داخل ڪريو' : 'Please enter $label';
+          return isSindhi
+              ? 'مھرباني ڪري $label داخل ڪريو'
+              : 'Please enter $label';
         }
         return null;
       },

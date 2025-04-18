@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'login_screen.dart'; // Import LoginScreen
-import 'package:provider/provider.dart';
-import '../providers/language_provider.dart'; // Import LanguageProvider
 
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
@@ -32,9 +30,6 @@ class _IntroScreenState extends State<IntroScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final isSindhi = !languageProvider.isSindhi;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -80,9 +75,9 @@ class _IntroScreenState extends State<IntroScreen> {
                         MaterialPageRoute(builder: (context) => LoginScreen()),
                       );
                     },
-                    child: Text(
-                      isSindhi ? "ڇڱو" : "Skip", // Sindhi translation for Skip
-                      style: const TextStyle(color: Colors.white, fontSize: 16),
+                    child: const Text(
+                      "Skip",
+                      style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   )
                 else
@@ -121,13 +116,7 @@ class _IntroScreenState extends State<IntroScreen> {
                     }
                   },
                   child: Text(
-                    currentPage == pages.length - 1
-                        ? (isSindhi
-                            ? "ختم"
-                            : "Finish") // Sindhi translation for Finish
-                        : (isSindhi
-                            ? "اڳتي"
-                            : "Next"), // Sindhi translation for Next
+                    currentPage == pages.length - 1 ? "Finish" : "Next",
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ),
@@ -152,9 +141,6 @@ class IntroPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final languageProvider = Provider.of<LanguageProvider>(context);
-    final isSindhi = !languageProvider.isSindhi;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
