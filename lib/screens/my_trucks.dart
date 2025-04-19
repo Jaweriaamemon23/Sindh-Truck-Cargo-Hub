@@ -135,7 +135,9 @@ class MyTrucksScreen extends StatelessWidget {
           isSindhi
               ? 'منهنجا ٽرڪ'
               : 'My Trucks', // Toggle title based on language
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(
+            color: Colors.white
+            ),
         ),
         backgroundColor: Colors.blue.shade800,
         actions: [
@@ -157,30 +159,6 @@ class MyTrucksScreen extends StatelessWidget {
                   : 'Add Truck', // Toggle button text
               style: TextStyle(color: Colors.white, fontSize: 16),
             ),
-          ),
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              // Toggle language setting when menu item is selected
-              if (value == 'Sindhi') {
-                Provider.of<LanguageProvider>(context, listen: false)
-                    .toggleLanguage();
-              } else {
-                Provider.of<LanguageProvider>(context, listen: false)
-                    .toggleLanguage();
-              }
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(
-                  value: 'Sindhi',
-                  child: Text("Sindhi"),
-                ),
-                PopupMenuItem(
-                  value: 'English',
-                  child: Text("English"),
-                ),
-              ];
-            },
           ),
         ],
       ),

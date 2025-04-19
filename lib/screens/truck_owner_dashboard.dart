@@ -6,7 +6,7 @@ import 'my_trucks.dart';
 import 'login_screen.dart';
 import 'cargo_requests_tab.dart';
 import 'package:provider/provider.dart';
-import 'package:sindh_truck_cargo_hub/providers/language_provider.dart'; // Import your LanguageProvider
+import 'package:sindh_truck_cargo_hub/providers/language_provider.dart';
 
 class TruckOwnerDashboard extends StatefulWidget {
   @override
@@ -17,9 +17,9 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    MyTrucksScreen(), // ✅ Now calling it as a separate screen
+    MyTrucksScreen(),
     BookCargoScreen(),
-    TruckOwnerReviewsScreen(), // ✅ Reviews Screen
+    TruckOwnerReviewsScreen(),
     LiveCargoRequestsTab(),
   ];
 
@@ -33,29 +33,42 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-          builder: (context) => LoginScreen()), // Redirect to Login
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+    final appBarColor = Colors.blue.shade800;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          Provider.of<LanguageProvider>(context).isSindhi
-              ? 'ٽرڪ مالڪ ڊيش بورڊ'
-              : 'Truck Owner Dashboard',
-          style: TextStyle(color: Colors.white),
+          isSindhi ? 'ٽرڪ مالڪ ڊيش بورڊ' : 'Truck Owner Dashboard',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
-        backgroundColor: Colors.blue.shade800,
+        backgroundColor: appBarColor,
         actions: [
           IconButton(
-            icon: Icon(Icons.logout, color: Colors.white),
+            icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
-            tooltip: Provider.of<LanguageProvider>(context).isSindhi
-                ? 'لاگ آئوٽ'
-                : 'Logout',
+            tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              Provider.of<LanguageProvider>(context, listen: false)
+                  .toggleLanguage();
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
+                PopupMenuItem(value: 'English', child: Text('English')),
+              ];
+            },
           ),
         ],
       ),
@@ -63,33 +76,26 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        backgroundColor: Colors.blue.shade800,
-        selectedItemColor: Colors.blueGrey.shade400,
-        unselectedItemColor: Colors.blue.shade300,
+        backgroundColor: appBarColor, // Matching AppBar color
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white60,
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping),
-            label: Provider.of<LanguageProvider>(context).isSindhi
-                ? 'منهنجا ٽرڪ'
-                : 'My Trucks',
+            icon: const Icon(Icons.local_shipping),
+            label: isSindhi ? 'منهنجا ٽرڪ' : 'My Trucks',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.book),
-            label: Provider.of<LanguageProvider>(context).isSindhi
-                ? 'ڪارجو بڪ ڪريو'
-                : 'Book Cargo',
+            icon: const Icon(Icons.book),
+            label: isSindhi ? 'ڪارجو بڪ ڪريو' : 'Book Cargo',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.star),
-            label: Provider.of<LanguageProvider>(context).isSindhi
-                ? 'جائزا'
-                : 'Reviews',
+            icon: const Icon(Icons.star),
+            label: isSindhi ? 'جائزا' : 'Reviews',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: Provider.of<LanguageProvider>(context).isSindhi
-                ? 'نوٽيفڪيشن'
-                : 'Notifications',
+            icon: const Icon(Icons.notifications),
+            label: isSindhi ? 'نوٽيفڪيشن' : 'Notifications',
           ),
         ],
       ),

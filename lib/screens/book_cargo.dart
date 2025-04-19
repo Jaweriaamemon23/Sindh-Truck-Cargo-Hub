@@ -76,8 +76,11 @@ class BookCargoScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(isSindhi ? "ڪارجو ڪتاب ڪريو" : "Book Cargo Requests",
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
+            style: TextStyle(
+              color: Colors.white
+              )
+              ),
+        backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('bookings').snapshots(),

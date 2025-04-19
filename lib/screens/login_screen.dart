@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../providers/language_provider.dart';
 import 'registration_screen.dart';
@@ -19,16 +21,41 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
 
   bool _isLoading = false;
+  List<String> recentEmails = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentEmails();
+  }
+
+  Future<void> _loadRecentEmails() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      recentEmails = prefs.getStringList('recent_emails') ?? [];
+    });
+  }
+
+  Future<void> _saveEmailToRecent(String email) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!recentEmails.contains(email)) {
+      recentEmails.insert(0, email);
+      if (recentEmails.length > 5) {
+        recentEmails = recentEmails.sublist(0, 5);
+      }
+      await prefs.setStringList('recent_emails', recentEmails);
+    }
+  }
 
   Future<void> _handleLogin() async {
     final isSindhi = Provider.of<LanguageProvider>(context, listen: false).isSindhi;
 
-    // Check for empty fields
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(isSindhi ? 'مهرباني ڪري اي ميل ۽ پاسورڊ داخل ڪريو.' : 'Please enter email and password.')),
@@ -39,15 +66,12 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Attempt to sign in with email and password
       UserCredential userCredential = await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
       User? user = userCredential.user;
-
-      // Check if user exists
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(isSindhi ? 'اوچتو نقص پيش آيو.' : "Unexpected error occurred.")),
@@ -58,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
       await user.reload();
       user = _auth.currentUser;
 
-      // Check if email is verified
       if (!user!.emailVerified) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(isSindhi ? 'مهرباني ڪري لاگ ان کان پهريان اي ميل جي تصديق ڪريو.' : 'Please verify your email before logging in.')),
@@ -67,21 +90,21 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Update Firestore if user email is verified
       if (user.email != null) {
-        await _firestore.collection('users').doc(user.email).update({
+        final email = user.email!;
+        await _saveEmailToRecent(email);
+
+        await _firestore.collection('users').doc(email).update({
           'emailVerified': true,
         }).catchError((error) {});
       }
 
-      // Fetch user data from Firestore
       QuerySnapshot userQuery = await _firestore
           .collection('users')
           .where('email', isEqualTo: user.email!)
           .limit(1)
           .get();
 
-      // Check if user data exists in Firestore
       if (userQuery.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(isSindhi ? 'صارف جو ڊيٽا نه مليو.' : "User data not found.")),
@@ -90,18 +113,14 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Setup Firebase Messaging
       await setupFirebaseMessaging();
 
-      // Extract user data from Firestore
       DocumentSnapshot userDoc = userQuery.docs.first;
       String userType = userDoc['userType'];
       String phone = userDoc['phone'];
 
-      // Save token and user info
       await saveTokenWithUserInfo(phone: phone, userType: userType);
 
-      // Navigate to appropriate dashboard based on user type
       Widget dashboard;
       switch (userType) {
         case 'Truck Owner':
@@ -121,18 +140,14 @@ class _LoginScreenState extends State<LoginScreen> {
           return;
       }
 
-      Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => dashboard));
-
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => dashboard));
     } on FirebaseAuthException catch (e) {
-      // Handle Firebase authentication errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(isSindhi ? "لاگ ان ناڪام: ${e.message}" : "Login failed: ${e.message}")),
       );
     } catch (e) {
-      // Handle general errors
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isSindhi ? 'اوچتو نقص پيش آيو.' : "An unexpected error occurred.")),
+        SnackBar(content: Text(isSindhi ? 'اوچتو نقص پيش آيو: $e' : "Unexpected error: $e")),
       );
     }
 
@@ -184,12 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     SizedBox(height: 30),
-                    _buildTextField(
-                      _emailController,
-                      isSindhi ? "اي ميل" : "Email",
-                      Icons.email,
-                      TextInputType.emailAddress,
-                    ),
+                    _buildEmailField(isSindhi),
                     SizedBox(height: 16),
                     _buildTextField(
                       _passwordController,
@@ -212,10 +222,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Text(
                               isSindhi ? 'لاگ ان ڪريو' : 'Login',
-                              style: TextStyle(
-                                fontSize: 18,
-                                color: Colors.white,
-                              ),
+                              style: TextStyle(fontSize: 18, color: Colors.white),
                             ),
                           ),
                     SizedBox(height: 20),
@@ -242,6 +249,41 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEmailField(bool isSindhi) {
+    return TypeAheadFormField<String>(
+      textFieldConfiguration: TextFieldConfiguration(
+        controller: _emailController,
+        decoration: InputDecoration(
+          filled: true,
+          fillColor: Colors.white,
+          labelText: isSindhi ? "اي ميل" : "Email",
+          prefixIcon: Icon(Icons.email, color: Colors.deepPurple),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        keyboardType: TextInputType.emailAddress,
+      ),
+      suggestionsCallback: (pattern) {
+        return recentEmails
+            .where((email) => email.toLowerCase().contains(pattern.toLowerCase()))
+            .toList();
+      },
+      itemBuilder: (context, String suggestion) {
+        return ListTile(
+          leading: Icon(Icons.email, color: Colors.deepPurple),
+          title: Text(suggestion),
+        );
+      },
+      onSuggestionSelected: (String suggestion) {
+        _emailController.text = suggestion;
+      },
+      hideOnEmpty: true,
+      hideOnLoading: true,
     );
   }
 

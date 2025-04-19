@@ -138,90 +138,115 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
   Widget build(BuildContext context) {
     final isSindhi = context.watch<LanguageProvider>().isSindhi;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Text(
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade800,
+        title: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
             isSindhi ? "منهنجو ڪارگو" : "My Cargo",
             style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: Colors.blue.shade900,
+              color: Colors.white,
             ),
           ),
-          SizedBox(height: 16),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: getCargoStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            SizedBox(height: 8),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: getCargoStream(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      isSindhi
-                          ? "توهان اڃا تائين ڪا به ڪارگو درخواست نه ڏني آهي."
-                          : "You have not requested any cargo yet.",
-                      style:
-                          TextStyle(fontSize: 18, color: Colors.blue.shade900),
-                    ),
-                  );
-                }
-
-                var cargoList = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: cargoList.length,
-                  itemBuilder: (context, index) {
-                    var cargo = cargoList[index].data() as Map<String, dynamic>;
-
-                    String cargoType = cargo['cargoType'] ?? 'Unknown';
-                    String startCity = cargo['startCity'] ?? 'Unknown';
-                    String endCity = cargo['endCity'] ?? 'Unknown';
-                    double weight = (cargo['weight'] != null)
-                        ? (cargo['weight'] is String
-                            ? double.tryParse(cargo['weight']) ?? 0.0
-                            : cargo['weight'].toDouble())
-                        : 0.0;
-                    String status = cargo['status'] ?? 'Pending';
-                    bool isReviewed = cargo['reviewed'] ?? false;
-                    String? acceptedBy = cargo['acceptedBy'];
-
-                    Color statusColor = status == 'Booked'
-                        ? Colors.orange
-                        : (status == 'Accepted'
-                            ? Colors.blue
-                            : (status == 'Delivered'
-                                ? Colors.green
-                                : Colors.orange));
-
-                    return Card(
-                      elevation: 3,
-                      margin: EdgeInsets.symmetric(vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        isSindhi
+                            ? "توهان اڃا تائين ڪا به ڪارگو درخواست نه ڏني آهي."
+                            : "You have not requested any cargo yet.",
+                        style:
+                            TextStyle(fontSize: 18, color: Colors.blue.shade900),
                       ),
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: Icon(Icons.inventory,
-                                color: Colors.blue.shade900),
-                            title: Text(cargoType),
-                            subtitle: Text(
-                              isSindhi
-                                  ? "کان: $startCity ➝ ڏانهن: $endCity\nوزن: ${weight.toString()} ٽن"
-                                  : "From: $startCity ➝ To: $endCity\nWeight: ${weight.toString()} tons",
-                            ),
-                            trailing: acceptedBy != null
-                                ? InkWell(
-                                    onTap: () {
-                                      _showTruckOwnerDetails(
-                                          status, acceptedBy);
-                                    },
-                                    child: Container(
+                    );
+                  }
+
+                  var cargoList = snapshot.data!.docs;
+
+                  return ListView.builder(
+                    itemCount: cargoList.length,
+                    itemBuilder: (context, index) {
+                      var cargo = cargoList[index].data() as Map<String, dynamic>;
+
+                      String cargoType = cargo['cargoType'] ?? 'Unknown';
+                      String startCity = cargo['startCity'] ?? 'Unknown';
+                      String endCity = cargo['endCity'] ?? 'Unknown';
+                      double weight = (cargo['weight'] != null)
+                          ? (cargo['weight'] is String
+                              ? double.tryParse(cargo['weight']) ?? 0.0
+                              : cargo['weight'].toDouble())
+                          : 0.0;
+                      String status = cargo['status'] ?? 'Pending';
+                      bool isReviewed = cargo['reviewed'] ?? false;
+                      String? acceptedBy = cargo['acceptedBy'];
+
+                      Color statusColor = status == 'Booked'
+                          ? Colors.orange
+                          : (status == 'Accepted'
+                              ? Colors.blue
+                              : (status == 'Delivered'
+                                  ? Colors.green
+                                  : Colors.orange));
+
+                      return Card(
+                        elevation: 3,
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Icon(Icons.inventory,
+                                  color: Colors.blue.shade900),
+                              title: Text(cargoType),
+                              subtitle: Text(
+                                isSindhi
+                                    ? "کان: $startCity ➝ ڏانهن: $endCity\nوزن: ${weight.toString()} ٽن"
+                                    : "From: $startCity ➝ To: $endCity\nWeight: ${weight.toString()} tons",
+                              ),
+                              trailing: acceptedBy != null
+                                  ? InkWell(
+                                      onTap: () {
+                                        _showTruckOwnerDetails(
+                                            status, acceptedBy);
+                                      },
+                                      child: Container(
+                                        width: 120,
+                                        child: Chip(
+                                          backgroundColor: statusColor,
+                                          label: Text(
+                                            isSindhi
+                                                ? (status == 'Delivered'
+                                                    ? 'پهچايو ويو'
+                                                    : status == 'Accepted'
+                                                        ? 'قبول ڪيو ويو'
+                                                        : 'بڪ ڪيو ويو')
+                                                : status,
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : SizedBox(
                                       width: 120,
                                       child: Chip(
                                         backgroundColor: statusColor,
@@ -240,84 +265,65 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                         ),
                                       ),
                                     ),
-                                  )
-                                : SizedBox(
-                                    width: 120,
-                                    child: Chip(
-                                      backgroundColor: statusColor,
-                                      label: Text(
-                                        isSindhi
-                                            ? (status == 'Delivered'
-                                                ? 'پهچايو ويو'
-                                                : status == 'Accepted'
-                                                    ? 'قبول ڪيو ويو'
-                                                    : 'بڪ ڪيو ويو')
-                                            : status,
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                              contentPadding:
+                                  EdgeInsets.symmetric(horizontal: 16.0),
+                              minVerticalPadding: 8.0,
+                              isThreeLine: false,
+                              dense: true,
+                            ),
+                            if (status == 'Delivered' && !isReviewed)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    bottom: 8.0, right: 8.0),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      _reviewSystem.showReviewDialog(
+                                        context,
+                                        cargoList[index].id,
+                                        () {
+                                          setState(() {});
+                                        },
+                                      );
+                                    },
+                                    icon: Icon(Icons.star, color: Colors.amber),
+                                    label: Text(isSindhi
+                                        ? "نظرثاني ڪريو"
+                                        : "Leave a Review"),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blue.shade800,
+                                      foregroundColor: Colors.white,
                                     ),
                                   ),
-                            contentPadding:
-                                EdgeInsets.symmetric(horizontal: 16.0),
-                            minVerticalPadding: 8.0,
-                            isThreeLine: false,
-                            dense: true,
-                          ),
-                          if (status == 'Delivered' && !isReviewed)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: 8.0, right: 8.0),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    _reviewSystem.showReviewDialog(
-                                      context,
-                                      cargoList[index].id,
-                                      () {
-                                        setState(() {});
-                                      },
-                                    );
-                                  },
-                                  icon: Icon(Icons.star, color: Colors.amber),
-                                  label: Text(isSindhi
-                                      ? "نظرثاني ڪريو"
-                                      : "Leave a Review"),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue.shade800,
-                                    foregroundColor: Colors.white,
+                                ),
+                              ),
+                            if (status == 'Delivered' && isReviewed)
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    bottom: 8.0, right: 8.0),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Chip(
+                                    label: Text(isSindhi
+                                        ? "نظرثاني ڪئي وئي"
+                                        : "Reviewed"),
+                                    backgroundColor: Colors.grey.shade200,
+                                    avatar: Icon(Icons.check_circle,
+                                        color: Colors.green),
                                   ),
                                 ),
                               ),
-                            ),
-                          if (status == 'Delivered' && isReviewed)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                  bottom: 8.0, right: 8.0),
-                              child: Align(
-                                alignment: Alignment.centerRight,
-                                child: Chip(
-                                  label: Text(isSindhi
-                                      ? "نظرثاني ڪئي وئي"
-                                      : "Reviewed"),
-                                  backgroundColor: Colors.grey.shade200,
-                                  avatar: Icon(Icons.check_circle,
-                                      color: Colors.green),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

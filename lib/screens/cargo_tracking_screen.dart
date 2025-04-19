@@ -186,20 +186,27 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
+
+      // ✅ AppBar with left-aligned title
+      appBar: AppBar(
+        backgroundColor: Colors.blue.shade800,
+        title: Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            isSindhi ? "ڪارگو ٽريڪنگ" : "Cargo Tracking",
+            style: const TextStyle(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        elevation: 0,
+      ),
+
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
-              Text(
-                isSindhi ? "ڪارگو ٽريڪنگ" : "Cargo Tracking",
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color.fromARGB(255, 13, 71, 161),
-                ),
-              ),
-              const SizedBox(height: 16),
               if (widget.bookingId == null) ...[
                 if (isLoadingBookings)
                   const CircularProgressIndicator()

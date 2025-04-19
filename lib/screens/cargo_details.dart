@@ -264,7 +264,7 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Add Cargo Details', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.blue.shade800,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

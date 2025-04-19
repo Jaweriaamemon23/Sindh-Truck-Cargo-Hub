@@ -26,8 +26,10 @@ class TruckOwnerReviewsScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(isSindhi ? "منهنجا جائزا" : "My Reviews",
-            style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
+            style: TextStyle(
+              color: Colors.white)
+            ),
+        backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

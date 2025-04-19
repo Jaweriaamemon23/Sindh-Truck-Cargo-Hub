@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+
+import '../providers/language_provider.dart';
 import 'cargo_details.dart';
 import 'available_trucks.dart';
 import 'my_cargo.dart';
-import 'cargo_tracking_screen.dart'; // <-- Import the new screen
-import 'login_screen.dart'; // Ensure you have a login screen for redirection
+import 'cargo_tracking_screen.dart';
+import 'login_screen.dart';
 
 class CargoTransporterDashboard extends StatefulWidget {
   @override
@@ -13,64 +16,55 @@ class CargoTransporterDashboard extends StatefulWidget {
       _CargoTransporterDashboardState();
 }
 
-class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
+class _CargoTransporterDashboardState
+    extends State<CargoTransporterDashboard> {
   int _selectedIndex = 0;
 
-  // Dynamic list of available bookings for the logged-in user
   List<String> availableBookings = [];
   String? selectedBookingId;
 
-  // Screens for each tab
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _screens = [
-      MyCargoScreen(), // ✅ My Cargo Tab
-      AvailableTrucksScreen(), // ✅ Available Trucks Tab
-      CargoTrackingScreen(), // ✅ Cargo Tracking Tab
+      MyCargoScreen(),
+      AvailableTrucksScreen(),
+      CargoTrackingScreen(),
     ];
-    fetchUserBookings(); // Fetch the user's bookings when the dashboard loads
+    fetchUserBookings();
   }
 
-  // Fetch available bookings for the logged-in user
   Future<void> fetchUserBookings() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId != null) {
       final querySnapshot = await FirebaseFirestore.instance
-          .collection('users') // Assuming each user has their own bookings
+          .collection('users')
           .doc(userId)
-          .collection('bookings') // Fetch bookings for the user
+          .collection('bookings')
           .get();
 
       setState(() {
-        availableBookings = querySnapshot.docs
-            .map((doc) => doc.id) // Booking ID is used as the document ID
-            .toList();
+        availableBookings = querySnapshot.docs.map((doc) => doc.id).toList();
       });
     }
   }
 
-  // Handle bottom navigation bar item selection
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
   }
 
-  // Logout function to sign out from Firebase and navigate to login screen
   void _logout() async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (context) => LoginScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => LoginScreen()),
     );
   }
 
-  // Function to handle booking selection (updated)
   void selectBooking(String? bookingId) {
     setState(() {
       selectedBookingId = bookingId;
@@ -79,68 +73,70 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Cargo Transporter Dashboard',
-          style: TextStyle(color: Colors.white),),
-        backgroundColor: Colors.blue.shade900,
+        title: Text(
+          isSindhi ? 'ڪارگو ٽرانسپورٽر ڊيش بورڊ' : 'Cargo Transporter Dashboard',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.blue.shade800,
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout, color: Colors.white),
+            icon: Icon(Icons.logout, color: Colors.white),
             onPressed: _logout,
-            tooltip: 'Logout',
+            tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
+          ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              Provider.of<LanguageProvider>(context, listen: false)
+                  .toggleLanguage();
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
+                PopupMenuItem(value: 'English', child: Text('English')),
+              ];
+            },
           ),
         ],
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade100, Colors.blue.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          children: [
-            // Dropdown for selecting booking (only visible in Cargo Tracking Tab)
-
-            Expanded(child: _screens[_selectedIndex]),
-          ],
-        ),
-      ),
+      body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: Colors.white,
         backgroundColor: Colors.blue.shade900,
         unselectedItemColor: Colors.white60,
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.inbox),
-            label: 'My Cargo',
+            label: isSindhi ? 'منهنجو ڪارگو' : 'My Cargo',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.local_shipping),
-            label: 'Available Trucks',
+            label: isSindhi ? 'دستياب ٽرڪون' : 'Available Trucks',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.location_on),
-            label: 'Cargo Tracking',
+            label: isSindhi ? 'ڪارگو ٽريڪنگ' : 'Cargo Tracking',
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue.shade900,
         onPressed: () {
-          // Navigate to the Cargo Details Input screen
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => CargoDetailsScreen()),
           );
         },
-        child: const Icon(Icons.add, size: 28, color: Colors.white),
-        tooltip: 'Add Cargo',
+        child: Icon(Icons.add, size: 28, color: Colors.white),
+        tooltip: isSindhi ? 'نئون ڪارگو شامل ڪريو' : 'Add Cargo',
       ),
     );
   }
