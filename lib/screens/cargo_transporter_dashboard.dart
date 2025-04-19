@@ -81,7 +81,9 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cargo Transporter Dashboard'),
+        title: const Text(
+          'Cargo Transporter Dashboard',
+          style: TextStyle(color: Colors.white),),
         backgroundColor: Colors.blue.shade900,
         actions: [
           IconButton(

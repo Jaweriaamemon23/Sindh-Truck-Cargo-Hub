@@ -40,10 +40,16 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
   ];
 
   void _calculatePrice() {
-    double weight = double.tryParse(_weightController.text) ?? 0;
+    double weightTons = double.tryParse(_weightController.text) ?? 0;
     int distance = int.tryParse(_distanceController.text) ?? 0;
 
-    if (weight <= 0 || distance <= 0) {
+    const double ratePerTonPerKm = 10.0;
+
+    if (weightTons > 0 && distance > 0) {
+      setState(() {
+        estimatedPrice = weightTons * distance * ratePerTonPerKm;
+      });
+    } else {
       setState(() {
         estimatedPrice = null;
       });
@@ -53,27 +59,9 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
           backgroundColor: Colors.red,
         ),
       );
-      return;
     }
-
-    double baseRatePerKm = 15.0;
-    double weightSurcharge = 0;
-
-    if (weight > 2 && weight <= 5) {
-      weightSurcharge = 0.05;
-    } else if (weight > 5 && weight <= 10) {
-      weightSurcharge = 0.1;
-    } else if (weight > 10) {
-      weightSurcharge = 0.2;
-    }
-
-    double price = distance * baseRatePerKm;
-    price += price * weightSurcharge;
-
-    setState(() {
-      estimatedPrice = price;
-    });
   }
+
 
   Future<void> storeNotificationInFirestore({
     required String cargoDetails,
