@@ -10,6 +10,66 @@ import 'package:http/http.dart' as http;
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final bool isSindhi = false; // Replace with actual language check
+  void _markAsDelivered(String bookingId, BuildContext context) async {
+    if (currentUser == null) return;
+
+    final bookingRef =
+        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
+
+    try {
+      // Fetch booking data
+      final bookingSnapshot = await bookingRef.get();
+      if (!bookingSnapshot.exists) {
+        print("❌ Booking not found with ID: $bookingId");
+        return;
+      }
+      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
+
+      print("🔧 Booking Data for delivery: $bookingData");
+
+      // Get the phone number of the user who requested the cargo
+      final email = bookingData['email'];
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      if (userSnapshot.docs.isEmpty) {
+        print("❌ No user found with email: $email");
+        return;
+      }
+
+      final phone = userSnapshot.docs.first.data()['phone'] ?? '';
+      print("🔧 Cargo Owner Phone: $phone");
+
+      // Update the booking status to Delivered
+      await bookingRef.update({
+        'status': 'Delivered',
+        'deliveredBy': currentUser!.email,
+        'deliveryDate': FieldValue.serverTimestamp(),
+      });
+
+      print("✅ Cargo marked as Delivered!");
+
+      final cargoType = bookingData['cargoType'];
+      final start = bookingData['startCity'];
+      final end = bookingData['endCity'];
+
+      // Notify the user that the cargo is delivered
+      await sendNotificationToCargoOwner(
+        phone: phone,
+        title: isSindhi
+            ? "توهان جو ڪارجو ترسيل ٿي ويو آهي!"
+            : "Your cargo has been delivered!",
+        body:
+            "$cargoType from $start to $end has been delivered by the truck owner.",
+      );
+    } catch (e) {
+      // Specific error handling to catch any issues with Firestore operations
+      print("❌ Error marking cargo as delivered: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -233,6 +293,7 @@ class BookCargoScreen extends StatelessWidget {
         ["https://www.googleapis.com/auth/firebase.messaging"],
       );
 
+      print("✅ Access token retrieved: ${client.credentials.accessToken.data}");
       return client.credentials.accessToken.data;
     } catch (e) {
       print("❌ Error getting OAuth token: $e");
@@ -265,7 +326,10 @@ class BookCargoScreen extends StatelessWidget {
 
       for (var doc in snapshot.docs) {
         final token = doc.data()['fcmToken'];
-        if (token == null || token.isEmpty) continue;
+        if (token == null || token.isEmpty) {
+          print("❌ Invalid or empty FCM token for phone: $phone");
+          continue;
+        }
 
         final payload = {
           "message": {
@@ -294,7 +358,7 @@ class BookCargoScreen extends StatelessWidget {
         if (response.statusCode == 200) {
           print("✅ Notification sent to: $phone");
         } else {
-          print("❌ FCM error: ${response.body}");
+          print("❌ FCM error: ${response.statusCode} - ${response.body}");
         }
       }
     } catch (e) {
@@ -312,6 +376,9 @@ class BookCargoScreen extends StatelessWidget {
       final bookingSnapshot = await bookingRef.get();
       final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
 
+      // Debugging: Check if the booking is being fetched correctly
+      print("🔧 Booking Data: $bookingData");
+
       // Get phone number of cargo owner
       final email = bookingData['email'];
       final userSnapshot = await FirebaseFirestore.instance
@@ -323,6 +390,7 @@ class BookCargoScreen extends StatelessWidget {
       final phone = userSnapshot.docs.isNotEmpty
           ? userSnapshot.docs.first.data()['phone'] ?? ''
           : '';
+      print("🔧 Cargo Owner Phone: $phone");
 
       await bookingRef.update({
         'status': 'Accepted',
@@ -355,29 +423,44 @@ class BookCargoScreen extends StatelessWidget {
         FirebaseFirestore.instance.collection('bookings').doc(bookingId);
 
     try {
+      final bookingSnapshot = await bookingRef.get();
+      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
+
+      // Get phone number of cargo owner
+      final email = bookingData['email'];
+      final userSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+
+      final phone = userSnapshot.docs.isNotEmpty
+          ? userSnapshot.docs.first.data()['phone'] ?? ''
+          : '';
+      print("🔧 Cargo Owner Phone: $phone");
+
       await bookingRef.update({
         'status': 'Rejected',
         'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
       });
 
       print("✅ Cargo Rejected!");
+
+      final cargoType = bookingData['cargoType'];
+      final start = bookingData['startCity'];
+      final end = bookingData['endCity'];
+
+      // 🚀 Send reject notification
+      await sendNotificationToCargoOwner(
+        phone: phone,
+        title: isSindhi
+            ? "توهان جو ڪارجو رد ٿي ويو آهي!"
+            : "Your cargo has been rejected!",
+        body:
+            "$cargoType from $start to $end has been rejected by a truck owner.",
+      );
     } catch (e) {
       print("❌ Error rejecting cargo: $e");
-    }
-  }
-
-  void _markAsDelivered(String bookingId, BuildContext context) async {
-    final bookingRef =
-        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
-
-    try {
-      await bookingRef.update({
-        'status': 'Delivered',
-      });
-
-      print("✅ Cargo Marked as Delivered!");
-    } catch (e) {
-      print("❌ Error marking cargo as delivered: $e");
     }
   }
 
@@ -387,10 +470,10 @@ class BookCargoScreen extends StatelessWidget {
         return Colors.green;
       case 'Rejected':
         return Colors.red;
-      case 'Delivered':
-        return Colors.blue;
-      default:
+      case 'Pending':
         return Colors.orange;
+      default:
+        return Colors.black;
     }
   }
 }

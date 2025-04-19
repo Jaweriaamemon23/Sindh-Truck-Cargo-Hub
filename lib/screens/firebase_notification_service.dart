@@ -192,16 +192,15 @@ Future<void> saveTokenWithUserInfo({
     await FirebaseFirestore.instance
         .collection('user_fcm_tokens')
         .doc(phone)
-        .collection('tokens') // Store token in a sub-collection for uniqueness
-        .doc(token) // Use token as document ID
         .set({
       'fcmToken': token,
       'userType': userType,
       'timestamp': FieldValue.serverTimestamp(),
       'platform': defaultTargetPlatform.toString(),
+      'phone': phone
     });
 
-    print("✅ FCM token stored in 'user_fcm_tokens/$phone/tokens/$token'");
+    print("✅ FCM token stored in 'user_fcm_tokens/$phone'");
   } catch (e) {
     print("❌ Failed to save token with user info: $e");
   }

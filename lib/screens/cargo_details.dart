@@ -100,12 +100,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
 
   Future<void> _requestBooking() async {
     User? user = FirebaseAuth.instance.currentUser;
-    DocumentSnapshot userSnapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .get();
-
-    final currentUserPhone = userSnapshot.get('phone') ?? '';
 
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -171,7 +165,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       'timestamp': FieldValue.serverTimestamp(),
       'transporterId': user.uid,
       'businessOwnerId': businessOwnerId,
-      'phone': currentUserPhone, // ✅ new line added here
       'status': 'Pending',
     });
 

@@ -73,7 +73,9 @@ class LiveCargoRequestsTab extends StatelessWidget {
                         EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                     title: Text(
                       data['cargoDetails'] ??
-                          (isSindhi ? 'نئون مال جي درخواست' : 'New Cargo Request'),
+                          (isSindhi
+                              ? 'نئون مال جي درخواست'
+                              : 'New Cargo Request'),
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
