@@ -59,6 +59,8 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
             tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
           ),
           PopupMenuButton<String>(
+            icon: Icon(Icons.language, color: Colors.white),
+            tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
             onSelected: (value) {
               Provider.of<LanguageProvider>(context, listen: false)
                   .toggleLanguage();

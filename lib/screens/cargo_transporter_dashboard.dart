@@ -92,6 +92,8 @@ class _CargoTransporterDashboardState
             tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
           ),
           PopupMenuButton<String>(
+            icon: Icon(Icons.language, color: Colors.white),
+            tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
             onSelected: (value) {
               Provider.of<LanguageProvider>(context, listen: false)
                   .toggleLanguage();
@@ -110,7 +112,7 @@ class _CargoTransporterDashboardState
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
         selectedItemColor: Colors.white,
-        backgroundColor: Colors.blue.shade900,
+        backgroundColor: Colors.blue.shade800,
         unselectedItemColor: Colors.white60,
         items: [
           BottomNavigationBarItem(

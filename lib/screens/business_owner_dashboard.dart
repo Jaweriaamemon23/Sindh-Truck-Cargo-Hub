@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'business_owner_functions.dart';
-import '../providers/language_provider.dart'; // Import LanguageProvider
+import '../providers/language_provider.dart';
 
 class BusinessOwnerDashboard extends StatefulWidget {
   @override
@@ -15,7 +15,6 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
   @override
   void initState() {
     super.initState();
-    // Debugging log added
     print("Fetching bookings for business owner...");
 
     BusinessOwnerFunctions.fetchBookingsForBusinessOwner(context, (bookings) {
@@ -33,82 +32,77 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      print("Tab selected: $index"); // Debugging tab selection
+      print("Tab selected: $index");
     });
-  }
-
-  List<Widget> getScreens() {
-    return [
-      isLoading
-          ? Center(child: CircularProgressIndicator())
-          : BusinessOwnerFunctions.getTrackShipmentScreen(context) ??
-              Center(child: Text("Error: Track Shipment screen is null")),
-      Center(
-          child: Text(
-              Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                  ? "بلانس ڏسو"
-                  : "View Invoice")),
-      Center(
-          child: Text(
-              Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                  ? "پٽڻ جي حيثيت ڏسو"
-                  : "View Shipment Status")),
-    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
+    List<Widget> screens = [
+      isLoading
+          ? Center(child: CircularProgressIndicator())
+          : BusinessOwnerFunctions.getTrackShipmentScreen(context) ??
+              Center(child: Text("Error: Track Shipment screen is null")),
+      Center(child: Text(isSindhi ? "بلانس ڏسو" : "View Invoice")),
+      Center(child: Text(isSindhi ? "پٽڻ جي حيثيت ڏسو" : "View Shipment Status")),
+    ];
+
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.blue.shade800,
         title: Text(
-            Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                ? "ڪاروباري مالڪ ڊيش بورڊ"
-                : "Business Owner Dashboard"),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: () {
-              print("Logging out..."); // Debugging logout
-              BusinessOwnerFunctions.logout(context);
-            },
-          )
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.blue.shade100, Colors.blue.shade300],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+          isSindhi ? "ڪاروباري مالڪ ڊيش بورڊ" : "Business Owner Dashboard",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
-        child: getScreens()[_selectedIndex],
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              print("Logging out...");
+              BusinessOwnerFunctions.logout(context);
+            },
+            tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.language, color: Colors.white),
+            tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
+            onSelected: (value) {
+              Provider.of<LanguageProvider>(context, listen: false)
+                  .toggleLanguage();
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
+                PopupMenuItem(value: 'English', child: Text('English')),
+              ];
+            },
+          ),
+        ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'پٽڻ ٽريڪ'
-                    : 'Track Shipment',
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Secondary "AppBar"
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            color: Colors.blue.shade800,
+            child: Text(
+              isSindhi ? 'منهنجون روانگيون' : 'My Shipments',
+              style: TextStyle(
+                fontSize: 20,
+                color: Colors.white,
+              ),
+            ),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'بلانس ڏسو'
-                    : 'View Invoice',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'پٽڻ جي حيثيت ڏسو'
-                    : 'View Shipment Status',
+          Expanded(
+            child: screens[_selectedIndex],
           ),
         ],
       ),
