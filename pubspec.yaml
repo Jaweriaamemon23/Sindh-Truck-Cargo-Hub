@@ -31,6 +31,8 @@ dependencies:
   provider: ^6.1.4
   shared_preferences: ^2.2.2
   flutter_typeahead: ^4.8.0
+  flutter_keyboard_visibility: ^5.0.0 # Use the latest version here
+
 
 dev_dependencies:
   flutter_test:
@@ -38,6 +40,13 @@ dev_dependencies:
   flutter_lints: ^5.0.0
   flutter_launcher_icons: ^0.14.3
 
+dependency_overrides:
+  flutter_keyboard_visibility:
+    git:
+      url: https://github.com/MisterJimson/flutter_keyboard_visibility.git
+      ref: b5e7b0de4fa9eb6a6c076f1120e5f92a77b7679d
+      path: flutter_keyboard_visibility
+      
 flutter_icons:
   android: true
   ios: true
