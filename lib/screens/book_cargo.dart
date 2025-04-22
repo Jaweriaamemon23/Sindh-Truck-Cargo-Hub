@@ -1,85 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:googleapis_auth/auth_io.dart' as auth;
-import 'package:flutter/services.dart' show rootBundle;
-import 'dart:convert';
 import 'cargo_tracking_screen.dart';
-import 'package:http/http.dart' as http;
+import 'cargo_actions.dart';
+import '../providers/language_provider.dart'; // <-- Add this line
+import 'package:provider/provider.dart'; // <-- Add this too
 
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
-  final bool isSindhi = false; // Replace with actual language check
-  void _markAsDelivered(String bookingId, BuildContext context) async {
-    if (currentUser == null) return;
-
-    final bookingRef =
-        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
-
-    try {
-      // Fetch booking data
-      final bookingSnapshot = await bookingRef.get();
-      if (!bookingSnapshot.exists) {
-        print("❌ Booking not found with ID: $bookingId");
-        return;
-      }
-      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
-
-      print("🔧 Booking Data for delivery: $bookingData");
-
-      // Get the phone number of the user who requested the cargo
-      final email = bookingData['email'];
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      if (userSnapshot.docs.isEmpty) {
-        print("❌ No user found with email: $email");
-        return;
-      }
-
-      final phone = userSnapshot.docs.first.data()['phone'] ?? '';
-      print("🔧 Cargo Owner Phone: $phone");
-
-      // Update the booking status to Delivered
-      await bookingRef.update({
-        'status': 'Delivered',
-        'deliveredBy': currentUser!.email,
-        'deliveryDate': FieldValue.serverTimestamp(),
-      });
-
-      print("✅ Cargo marked as Delivered!");
-
-      final cargoType = bookingData['cargoType'];
-      final start = bookingData['startCity'];
-      final end = bookingData['endCity'];
-
-      // Notify the user that the cargo is delivered
-      await sendNotificationToCargoOwner(
-        phone: phone,
-        title: isSindhi
-            ? "توهان جو ڪارجو ترسيل ٿي ويو آهي!"
-            : "Your cargo has been delivered!",
-        body:
-            "$cargoType from $start to $end has been delivered by the truck owner.",
-      );
-    } catch (e) {
-      // Specific error handling to catch any issues with Firestore operations
-      print("❌ Error marking cargo as delivered: $e");
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi =
+        Provider.of<LanguageProvider>(context).isSindhi; // <-- Dynamic language
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(isSindhi ? "ڪارجو ڪتاب ڪريو" : "Book Cargo Requests",
-            style: TextStyle(
-              color: Colors.white
-              )
-              ),
+        title: Text(
+          isSindhi ? "ڪارجو ڪتاب ڪريو" : "Book Cargo Requests",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -87,9 +27,10 @@ class BookCargoScreen extends StatelessWidget {
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
-                child: Text(isSindhi
-                    ? "❌ بوڪنگس لوڊ ڪرڻ ۾ غلطي!"
-                    : "❌ Error loading bookings!"));
+              child: Text(isSindhi
+                  ? "❌ بوڪنگس لوڊ ڪرڻ ۾ غلطي!"
+                  : "❌ Error loading bookings!"),
+            );
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -97,7 +38,6 @@ class BookCargoScreen extends StatelessWidget {
 
           var bookings = snapshot.data?.docs ?? [];
 
-          // Exclude bookings rejected or removed by this Truck Owner
           bookings = bookings.where((doc) {
             var data = doc.data() as Map<String, dynamic>;
             List<dynamic> rejectedBy = data['rejectedBy'] ?? [];
@@ -108,9 +48,10 @@ class BookCargoScreen extends StatelessWidget {
 
           if (bookings.isEmpty) {
             return Center(
-                child: Text(isSindhi
-                    ? "ڪابه بوڪنگ دستياب ناهي."
-                    : "No bookings available."));
+              child: Text(
+                isSindhi ? "ڪابه بوڪنگ دستياب ناهي." : "No bookings available.",
+              ),
+            );
           }
 
           return ListView.builder(
@@ -151,12 +92,7 @@ class BookCargoScreen extends StatelessWidget {
                     } else {
                       requestedByPhone =
                           isSindhi ? "يوزر نٿو ملي" : "User not found";
-                      print("📛 No user found with email $requestedByEmail");
                     }
-                  }
-
-                  if (userSnapshot.hasError) {
-                    print("❌ Error fetching phone: ${userSnapshot.error}");
                   }
 
                   return Card(
@@ -176,7 +112,7 @@ class BookCargoScreen extends StatelessWidget {
                               SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  "${isSindhi ? 'ڪارجو:' : 'Cargo:'} ${bookingData['cargoType'] ?? 'N/A'}",
+                                  "${isSindhi ? 'ڪارگو:' : 'Cargo:'} ${bookingData['cargoType'] ?? 'N/A'}",
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -200,9 +136,8 @@ class BookCargoScreen extends StatelessWidget {
                           Text(
                             "${isSindhi ? 'حالت:' : 'Status:'} $displayStatus",
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: _getStatusColor(displayStatus),
-                            ),
+                                fontWeight: FontWeight.bold,
+                                color: getStatusColor(displayStatus)),
                           ),
                           SizedBox(height: 10),
                           if (status == 'Pending')
@@ -211,22 +146,20 @@ class BookCargoScreen extends StatelessWidget {
                               children: [
                                 ElevatedButton.icon(
                                   onPressed: () =>
-                                      _acceptCargo(bookingId, context),
+                                      acceptCargo(bookingId, context),
                                   icon: Icon(Icons.check, color: Colors.white),
                                   label:
                                       Text(isSindhi ? "قبول ڪريو" : "Accept"),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green,
-                                      foregroundColor: Colors.white),
+                                      backgroundColor: Colors.green),
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () =>
-                                      _rejectCargo(bookingId, context),
+                                      rejectCargo(bookingId, context),
                                   icon: Icon(Icons.cancel, color: Colors.white),
                                   label: Text(isSindhi ? "رد ڪريو" : "Reject"),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white),
+                                      backgroundColor: Colors.red),
                                 ),
                               ],
                             ),
@@ -237,16 +170,14 @@ class BookCargoScreen extends StatelessWidget {
                               children: [
                                 ElevatedButton.icon(
                                   onPressed: () =>
-                                      _markAsDelivered(bookingId, context),
+                                      markAsDelivered(bookingId, context),
                                   icon: Icon(Icons.check_circle,
                                       color: Colors.white),
                                   label: Text(isSindhi
                                       ? "پورو ٿي ويو"
                                       : "Mark as Delivered"),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color.fromARGB(
-                                          255, 56, 145, 218),
-                                      foregroundColor: Colors.white),
+                                      backgroundColor: Colors.blue),
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () {
@@ -254,18 +185,16 @@ class BookCargoScreen extends StatelessWidget {
                                       context,
                                       MaterialPageRoute(
                                         builder: (_) => CargoTrackingScreen(
-                                          bookingId: bookingId,
-                                        ),
+                                            bookingId: bookingId),
                                       ),
                                     );
                                   },
                                   icon: Icon(Icons.location_on,
                                       color: Colors.white),
-                                  label: Text(isSindhi ? "ٽريڪ ڪريو" : "Track"),
+                                  label: Text(isSindhi ? "ٽريڪ ڪريو" : "Track",
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color.fromARGB(
-                                          255, 146, 96, 231),
-                                      foregroundColor: Colors.white),
+                                      backgroundColor: Colors.purple),
                                 ),
                               ],
                             ),
@@ -280,203 +209,5 @@ class BookCargoScreen extends StatelessWidget {
         },
       ),
     );
-  }
-
-  Future<String?> getAccessToken() async {
-    try {
-      final String serviceAccountJson =
-          await rootBundle.loadString("assets/firebase-admin-key.json");
-
-      final Map<String, dynamic> credentials = jsonDecode(serviceAccountJson);
-      final accountCredentials =
-          auth.ServiceAccountCredentials.fromJson(credentials);
-
-      final client = await auth.clientViaServiceAccount(
-        accountCredentials,
-        ["https://www.googleapis.com/auth/firebase.messaging"],
-      );
-
-      print("✅ Access token retrieved: ${client.credentials.accessToken.data}");
-      return client.credentials.accessToken.data;
-    } catch (e) {
-      print("❌ Error getting OAuth token: $e");
-      return null;
-    }
-  }
-
-  Future<void> sendNotificationToCargoOwner({
-    required String phone,
-    required String title,
-    required String body,
-  }) async {
-    try {
-      final accessToken = await getAccessToken();
-      if (accessToken == null) {
-        print("❌ Failed to get OAuth token.");
-        return;
-      }
-
-      // Query using phone number
-      final snapshot = await FirebaseFirestore.instance
-          .collection('user_fcm_tokens')
-          .where('phone', isEqualTo: phone)
-          .get();
-
-      if (snapshot.docs.isEmpty) {
-        print("❌ No FCM token found for phone: $phone");
-        return;
-      }
-
-      for (var doc in snapshot.docs) {
-        final token = doc.data()['fcmToken'];
-        if (token == null || token.isEmpty) {
-          print("❌ Invalid or empty FCM token for phone: $phone");
-          continue;
-        }
-
-        final payload = {
-          "message": {
-            "token": token,
-            "notification": {
-              "title": title,
-              "body": body,
-            },
-            "data": {
-              "type": "cargo_response",
-              "action": title.contains("accepted") ? "accepted" : "rejected",
-            },
-          }
-        };
-
-        final response = await http.post(
-          Uri.parse(
-              "https://fcm.googleapis.com/v1/projects/sindhtruckcargohub/messages:send"),
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": "Bearer $accessToken",
-          },
-          body: jsonEncode(payload),
-        );
-
-        if (response.statusCode == 200) {
-          print("✅ Notification sent to: $phone");
-        } else {
-          print("❌ FCM error: ${response.statusCode} - ${response.body}");
-        }
-      }
-    } catch (e) {
-      print("❌ Error sending notification: $e");
-    }
-  }
-
-  void _acceptCargo(String bookingId, BuildContext context) async {
-    if (currentUser == null) return;
-
-    final bookingRef =
-        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
-
-    try {
-      final bookingSnapshot = await bookingRef.get();
-      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
-
-      // Debugging: Check if the booking is being fetched correctly
-      print("🔧 Booking Data: $bookingData");
-
-      // Get phone number of cargo owner
-      final email = bookingData['email'];
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      final phone = userSnapshot.docs.isNotEmpty
-          ? userSnapshot.docs.first.data()['phone'] ?? ''
-          : '';
-      print("🔧 Cargo Owner Phone: $phone");
-
-      await bookingRef.update({
-        'status': 'Accepted',
-        'acceptedBy': currentUser!.email,
-      });
-
-      print("✅ Cargo Accepted!");
-
-      final cargoType = bookingData['cargoType'];
-      final start = bookingData['startCity'];
-      final end = bookingData['endCity'];
-
-      await sendNotificationToCargoOwner(
-        phone: phone,
-        title: isSindhi
-            ? "توهان جو ڪارجو قبول ٿي ويو آهي!"
-            : "Your cargo has been accepted!",
-        body:
-            "$cargoType from $start to $end has been accepted by a truck owner.",
-      );
-    } catch (e) {
-      print("❌ Error accepting cargo: $e");
-    }
-  }
-
-  void _rejectCargo(String bookingId, BuildContext context) async {
-    if (currentUser == null) return;
-
-    final bookingRef =
-        FirebaseFirestore.instance.collection('bookings').doc(bookingId);
-
-    try {
-      final bookingSnapshot = await bookingRef.get();
-      final bookingData = bookingSnapshot.data() as Map<String, dynamic>;
-
-      // Get phone number of cargo owner
-      final email = bookingData['email'];
-      final userSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      final phone = userSnapshot.docs.isNotEmpty
-          ? userSnapshot.docs.first.data()['phone'] ?? ''
-          : '';
-      print("🔧 Cargo Owner Phone: $phone");
-
-      await bookingRef.update({
-        'status': 'Rejected',
-        'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
-      });
-
-      print("✅ Cargo Rejected!");
-
-      final cargoType = bookingData['cargoType'];
-      final start = bookingData['startCity'];
-      final end = bookingData['endCity'];
-
-      // 🚀 Send reject notification
-      await sendNotificationToCargoOwner(
-        phone: phone,
-        title: isSindhi
-            ? "توهان جو ڪارجو رد ٿي ويو آهي!"
-            : "Your cargo has been rejected!",
-        body:
-            "$cargoType from $start to $end has been rejected by a truck owner.",
-      );
-    } catch (e) {
-      print("❌ Error rejecting cargo: $e");
-    }
-  }
-
-  Color _getStatusColor(String status) {
-    switch (status) {
-      case 'Accepted':
-        return Colors.green;
-      case 'Rejected':
-        return Colors.red;
-      case 'Pending':
-        return Colors.orange;
-      default:
-        return Colors.black;
-    }
   }
 }

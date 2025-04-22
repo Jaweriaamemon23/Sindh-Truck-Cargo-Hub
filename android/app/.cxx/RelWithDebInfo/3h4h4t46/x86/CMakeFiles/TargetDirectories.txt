@@ -1,0 +1,2 @@
+D:/Fyp Mobile App/Sindh-Truck-Cargo-Hub/android/app/.cxx/RelWithDebInfo/3h4h4t46/x86/CMakeFiles/edit_cache.dir
+D:/Fyp Mobile App/Sindh-Truck-Cargo-Hub/android/app/.cxx/RelWithDebInfo/3h4h4t46/x86/CMakeFiles/rebuild_cache.dir
