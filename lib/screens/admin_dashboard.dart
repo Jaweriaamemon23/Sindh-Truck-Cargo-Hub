@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:sindh_truck_cargo_hub/screens/available_user.dart';
+import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
 import '../providers/language_provider.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -11,9 +13,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    UserManagementScreen(),
-    TruckManagementScreen(),
-    NotificationsScreen(),
+    AvailableUsersScreen(),
+    FeedbackScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -24,15 +25,15 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.blue.shade600, // 👈 Updated AppBar color
         title: Text(
-          Provider.of<LanguageProvider>(context, listen: false).isSindhi
-              ? 'ايڊمن ڊيش بورڊ'
-              : 'Admin Dashboard',
+          isSindhi ? 'ايڊمن ڊيش بورڊ' : 'Admin Dashboard',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -48,24 +49,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'استعمال ڪندڙ'
-                    : 'Users',
+            label: isSindhi ? 'استعمال ڪندڙ' : 'Users',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_shipping),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'ٽرڪ'
-                    : 'Trucks',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label:
-                Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                    ? 'نوٽيفڪيشن'
-                    : 'Notifications',
+            icon: Icon(Icons.feedback),
+            label: isSindhi ? 'موٽ' : 'Feedback',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -73,60 +61,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
-    );
-  }
-}
-
-class UserManagementScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return _buildScreen(
-      icon: Icons.person,
-      title: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'استعمال ڪندڙن جو انتظام ڪريو'
-          : 'Manage Users',
-      buttonText: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'صارف انتظام تائين وڃو'
-          : 'Go to User Management',
-      onPressed: () {
-        // Add navigation logic
-      },
-    );
-  }
-}
-
-class TruckManagementScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return _buildScreen(
-      icon: Icons.local_shipping,
-      title: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'ٽرڪ جو انتظام ڪريو'
-          : 'Manage Trucks',
-      buttonText: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'ٽرڪ انتظام تائين وڃو'
-          : 'Go to Truck Management',
-      onPressed: () {
-        // Add navigation logic
-      },
-    );
-  }
-}
-
-class NotificationsScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return _buildScreen(
-      icon: Icons.notifications,
-      title: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'نوٽيفڪيشن'
-          : 'Notifications',
-      buttonText: Provider.of<LanguageProvider>(context, listen: false).isSindhi
-          ? 'نوٽيفڪيشن ڏسو'
-          : 'View Notifications',
-      onPressed: () {
-        // Add navigation logic
-      },
     );
   }
 }

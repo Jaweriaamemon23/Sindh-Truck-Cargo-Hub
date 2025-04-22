@@ -5,13 +5,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../providers/language_provider.dart';
 import 'registration_screen.dart';
 import 'truck_owner_dashboard.dart';
 import 'cargo_transporter_dashboard.dart';
 import 'business_owner_dashboard.dart';
 import 'firebase_notification_service.dart';
+import 'admin_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -21,7 +21,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -54,11 +53,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    final isSindhi = Provider.of<LanguageProvider>(context, listen: false).isSindhi;
+    final isSindhi =
+        Provider.of<LanguageProvider>(context, listen: false).isSindhi;
 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isSindhi ? 'مهرباني ڪري اي ميل ۽ پاسورڊ داخل ڪريو.' : 'Please enter email and password.')),
+        SnackBar(
+            content: Text(isSindhi
+                ? 'مهرباني ڪري اي ميل ۽ پاسورڊ داخل ڪريو.'
+                : 'Please enter email and password.')),
       );
       return;
     }
@@ -74,30 +77,42 @@ class _LoginScreenState extends State<LoginScreen> {
       User? user = userCredential.user;
       if (user == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isSindhi ? 'اوچتو نقص پيش آيو.' : "Unexpected error occurred.")),
+          SnackBar(
+              content: Text(isSindhi
+                  ? 'اوچتو نقص پيش آيو.'
+                  : "Unexpected error occurred.")),
         );
+        setState(() => _isLoading = false);
         return;
       }
 
       await user.reload();
       user = _auth.currentUser;
 
-      if (!user!.emailVerified) {
+      final isAdmin = user!.email == 'sindhtruckcargohub@gmail.com';
+
+      if (!isAdmin && !user.emailVerified) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isSindhi ? 'مهرباني ڪري لاگ ان کان پهريان اي ميل جي تصديق ڪريو.' : 'Please verify your email before logging in.')),
+          SnackBar(
+              content: Text(isSindhi
+                  ? 'مهرباني ڪري لاگ ان کان پهريان اي ميل جي تصديق ڪريو.'
+                  : 'Please verify your email before logging in.')),
         );
         setState(() => _isLoading = false);
         return;
       }
 
-      if (user.email != null) {
-        final email = user.email!;
-        await _saveEmailToRecent(email);
+      await _saveEmailToRecent(user.email!);
 
-        await _firestore.collection('users').doc(email).update({
-          'emailVerified': true,
-        }).catchError((error) {});
+      if (isAdmin) {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => AdminDashboard()));
+        return;
       }
+
+      await _firestore.collection('users').doc(user.email).update({
+        'emailVerified': true,
+      }).catchError((_) {});
 
       QuerySnapshot userQuery = await _firestore
           .collection('users')
@@ -107,7 +122,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (userQuery.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(isSindhi ? 'صارف جو ڊيٽا نه مليو.' : "User data not found.")),
+          SnackBar(
+              content: Text(
+                  isSindhi ? 'صارف جو ڊيٽا نه مليو.' : "User data not found.")),
         );
         setState(() => _isLoading = false);
         return;
@@ -134,20 +151,28 @@ class _LoginScreenState extends State<LoginScreen> {
           break;
         default:
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(isSindhi ? 'اڻڄاتل صارف قسم.' : "Unknown user type.")),
+            SnackBar(
+                content:
+                    Text(isSindhi ? 'اڻڄاتل صارف قسم.' : "Unknown user type.")),
           );
           setState(() => _isLoading = false);
           return;
       }
 
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => dashboard));
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => dashboard));
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isSindhi ? "لاگ ان ناڪام: ${e.message}" : "Login failed: ${e.message}")),
+        SnackBar(
+            content: Text(isSindhi
+                ? "لاگ ان ناڪام: ${e.message}"
+                : "Login failed: ${e.message}")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isSindhi ? 'اوچتو نقص پيش آيو: $e' : "Unexpected error: $e")),
+        SnackBar(
+            content: Text(
+                isSindhi ? 'اوچتو نقص پيش آيو: $e' : "Unexpected error: $e")),
       );
     }
 
@@ -222,7 +247,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             child: Text(
                               isSindhi ? 'لاگ ان ڪريو' : 'Login',
-                              style: TextStyle(fontSize: 18, color: Colors.white),
+                              style:
+                                  TextStyle(fontSize: 18, color: Colors.white),
                             ),
                           ),
                     SizedBox(height: 20),
@@ -270,7 +296,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       suggestionsCallback: (pattern) {
         return recentEmails
-            .where((email) => email.toLowerCase().contains(pattern.toLowerCase()))
+            .where(
+                (email) => email.toLowerCase().contains(pattern.toLowerCase()))
             .toList();
       },
       itemBuilder: (context, String suggestion) {

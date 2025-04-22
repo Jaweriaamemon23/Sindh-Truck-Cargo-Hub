@@ -180,22 +180,25 @@ class FeedbackScreen extends StatelessWidget {
                               ElevatedButton.icon(
                                 onPressed: () =>
                                     showFeedbackDialog(context, email, name),
-                                icon: Icon(Icons.feedback),
-                                label: Text("Feedback"),
+                                icon: Icon(Icons.feedback_outlined,
+                                    color: Colors.white),
+                                label: Text("Feedback",
+                                    style: TextStyle(color: Colors.white)),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blueAccent,
-                                  foregroundColor: Colors
-                                      .white, // Ensures icon + ripple effects are white
+                                  foregroundColor: Colors.white,
                                 ),
                               ),
                               if (isLowRating)
                                 ElevatedButton.icon(
                                   onPressed: () =>
                                       confirmAndRemoveUser(context, userId),
-                                  icon: Icon(Icons.delete),
-                                  label: Text("Remove"),
+                                  icon: Icon(Icons.delete, color: Colors.white),
+                                  label: Text("Remove",
+                                      style: TextStyle(color: Colors.white)),
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.redAccent,
+                                    foregroundColor: Colors.white,
                                   ),
                                 ),
                             ],
