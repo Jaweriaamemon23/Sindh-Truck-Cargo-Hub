@@ -6,10 +6,11 @@ class AvailableUsersScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Available Users"),
-        backgroundColor: Colors.blueAccent,
-        centerTitle: true,
-        elevation: 4,
+        title: Text(
+          "Available Users",
+          style: TextStyle(color: Colors.white),
+          ),
+        backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('users').snapshots(),

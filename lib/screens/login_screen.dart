@@ -185,95 +185,106 @@ class _LoginScreenState extends State<LoginScreen> {
     final isSindhi = langProvider.isSindhi;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isSindhi ? "لاگ ان اسڪرين" : "Login Screen"),
-        backgroundColor: Colors.blueAccent,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.language),
-            tooltip: isSindhi ? 'انگريزي ۾ ڪريو' : 'Switch to Sindhi',
-            onPressed: () {
-              langProvider.toggleLanguage();
-            },
-          ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.deepPurple.shade50, Colors.blueAccent.shade200],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: AutofillGroup(
-              child: Form(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      isSindhi ? "!ڀلي ڪري آيا" : "Welcome Back!",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
-                      ),
-                    ),
-                    SizedBox(height: 30),
-                    _buildEmailField(isSindhi),
-                    SizedBox(height: 16),
-                    _buildTextField(
-                      _passwordController,
-                      isSindhi ? "پاسورڊ" : "Password",
-                      Icons.lock,
-                      TextInputType.text,
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 30),
-                    _isLoading
-                        ? Center(child: CircularProgressIndicator())
-                        : ElevatedButton(
-                            onPressed: _handleLogin,
-                            style: ElevatedButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Colors.blueAccent,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+      body: Stack(
+        children: [
+          // Background and form
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade50, Colors.blue.shade100, Colors.blue.shade200],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
+                child: AutofillGroup(
+                  child: Form(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(height: 60), // Leave space for the icon
+                        Text(
+                          isSindhi ? "!ڀلي ڪري آيا" : "Welcome Back!",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                        SizedBox(height: 30),
+                        _buildEmailField(isSindhi),
+                        SizedBox(height: 16),
+                        _buildTextField(
+                          _passwordController,
+                          isSindhi ? "پاسورڊ" : "Password",
+                          Icons.lock,
+                          TextInputType.text,
+                          obscureText: true,
+                        ),
+                        SizedBox(height: 30),
+                        _isLoading
+                            ? Center(child: CircularProgressIndicator(color: Colors.blue.shade700))
+                            : ElevatedButton(
+                                onPressed: _handleLogin,
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(vertical: 16),
+                                  backgroundColor: Colors.blue.shade700,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  shadowColor: Colors.blue.shade300,
+                                  elevation: 8,
+                                ),
+                                child: Text(
+                                  isSindhi ? 'لاگ ان ڪريو' : 'Login',
+                                  style: TextStyle(fontSize: 18),
+                                ),
                               ),
-                            ),
-                            child: Text(
-                              isSindhi ? 'لاگ ان ڪريو' : 'Login',
-                              style:
-                                  TextStyle(fontSize: 18, color: Colors.white),
+                        SizedBox(height: 20),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => RegistrationScreen(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            isSindhi
+                                ? "اکائونٽ ناهي؟ هتي رجسٽر ٿيو"
+                                : "Don't have an account? Register here",
+                            style: TextStyle(
+                              color: Colors.blue.shade900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
-                    SizedBox(height: 20),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RegistrationScreen(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        isSindhi
-                            ? "اکائونٽ ناهي؟ هتي رجسٽر ٿيو"
-                            : "Don't have an account? Register here",
-                        style: TextStyle(color: Colors.white),
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
-        ),
+
+          // Language icon at top right
+          Positioned(
+            top: 16,
+            right: 16,
+            child: IconButton(
+              icon: Icon(Icons.language, color: Colors.blue.shade900),
+              tooltip: isSindhi ? 'انگريزي ۾ ڪريو' : 'Switch to Sindhi',
+              onPressed: () {
+                langProvider.toggleLanguage();
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

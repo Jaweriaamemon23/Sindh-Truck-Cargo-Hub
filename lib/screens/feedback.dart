@@ -105,8 +105,11 @@ class FeedbackScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Truck Owners"),
-        backgroundColor: Colors.blueAccent,
+        title: Text(
+          "Truck Owners",
+          style: TextStyle(color: Colors.white),
+          ),
+        backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

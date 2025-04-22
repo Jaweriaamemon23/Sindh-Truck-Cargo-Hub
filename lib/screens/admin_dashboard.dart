@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:sindh_truck_cargo_hub/screens/available_user.dart';
 import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
+import 'package:sindh_truck_cargo_hub/screens/login_screen.dart';
 import '../providers/language_provider.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -12,7 +14,7 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
+  final List<Widget> _screens = [
     AvailableUsersScreen(),
     FeedbackScreen(),
   ];
@@ -23,17 +25,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
     });
   }
 
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => LoginScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue.shade600, // 👈 Updated AppBar color
         title: Text(
           isSindhi ? 'ايڊمن ڊيش بورڊ' : 'Admin Dashboard',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
+        backgroundColor: Colors.blue.shade800,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.logout, color: Colors.white),
+            onPressed: _logout,
+            tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
+          ),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.language, color: Colors.white),
+            tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
+            onSelected: (value) {
+              Provider.of<LanguageProvider>(context, listen: false)
+                  .toggleLanguage();
+            },
+            itemBuilder: (BuildContext context) {
+              return [
+                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
+                PopupMenuItem(value: 'English', child: Text('English')),
+              ];
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -43,9 +77,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
             end: Alignment.bottomRight,
           ),
         ),
-        child: _pages[_selectedIndex],
+        child: _screens[_selectedIndex],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        selectedItemColor: Colors.white,
+        backgroundColor: Colors.blue.shade800,
+        unselectedItemColor: Colors.white60,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -56,45 +95,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
             label: isSindhi ? 'موٽ' : 'Feedback',
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue.shade900,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
       ),
     );
   }
-}
-
-Widget _buildScreen({
-  required IconData icon,
-  required String title,
-  required String buttonText,
-  required VoidCallback onPressed,
-}) {
-  return Center(
-    child: Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icon, size: 80, color: Colors.blue.shade900),
-        SizedBox(height: 20),
-        Text(
-          title,
-          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: onPressed,
-          child: Text(buttonText),
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            backgroundColor: Colors.blue.shade900,
-            foregroundColor: Colors.white,
-          ),
-        ),
-      ],
-    ),
-  );
 }
