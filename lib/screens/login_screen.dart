@@ -261,6 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(
                               color: Colors.blue.shade900,
                               fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline
                             ),
                           ),
                         ),
@@ -275,7 +276,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // Language icon at top right
           Positioned(
             top: 16,
-            right: 16,
+            right: 2,
             child: IconButton(
               icon: Icon(Icons.language, color: Colors.blue.shade900),
               tooltip: isSindhi ? 'انگريزي ۾ ڪريو' : 'Switch to Sindhi',

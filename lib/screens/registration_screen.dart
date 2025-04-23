@@ -8,7 +8,7 @@ import 'cargo_transporter_form.dart';
 import 'truck_owner_form.dart';
 import 'business_owner_form.dart';
 import 'package:provider/provider.dart';
-import '../providers/language_provider.dart'; // Assuming you've created this provider for managing languages
+import '../providers/language_provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -27,16 +27,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   String? selectedUserType;
-  final List<String> userTypes = [
-    'Truck Owner',
-    'Cargo Transporter',
-    'Business Owner'
-  ];
+  final List<String> userTypes = ['Truck Owner', 'Cargo Transporter', 'Business Owner'];
   bool _isLoading = false;
   bool _waitingForVerification = false;
   late Timer _emailCheckTimer;
 
-  // ✅ Function to hash the password using SHA-256
   String _hashPassword(String password) {
     return sha256.convert(utf8.encode(password)).toString();
   }
@@ -44,18 +39,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void _registerUser() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري سڀئي فيلڊ صحيح طريقي سان ڀريو!' : 'Please fill all fields correctly!'}')),
+        SnackBar(content: Text('❌ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'مھرباني ڪري سڀئي فيلڊ صحيح طريقي سان ڀريو!' : 'Please fill all fields correctly!'}')),
       );
       return;
     }
 
     if (selectedUserType == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري صارف جي قسم چونڊيو!' : 'Please select a user type!'}')),
+        SnackBar(content: Text('❌ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'مھرباني ڪري صارف جي قسم چونڊيو!' : 'Please select a user type!'}')),
       );
       return;
     }
@@ -64,8 +55,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       String phone = _phoneController.text.trim();
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -76,7 +66,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         await user.sendEmailVerification();
         String hashedPassword = _hashPassword(_passwordController.text.trim());
 
-        // ✅ Store user details in Firestore using PHONE as the user ID
         await _firestore.collection('users').doc(phone).set({
           'userId': phone,
           'name': _nameController.text.trim(),
@@ -90,9 +79,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  "✅ ${Provider.of<LanguageProvider>(context).isSindhi ? 'توهان جو اي ميل موڪليو ويو آهي! مھرباني ڪري تصديق ڪريو.' : 'Verification email sent! Please verify.'}")),
+          SnackBar(content: Text("✅ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'توهان جو اي ميل موڪليو ويو آهي! مھرباني ڪري تصديق ڪريو.' : 'Verification email sent! Please verify.'}")),
         );
 
         setState(() {
@@ -104,9 +91,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(
-                "❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'رجسٽريشن ۾ ناڪامي: $e' : 'Registration failed: $e'}")),
+        SnackBar(content: Text("❌ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'رجسٽريشن ۾ ناڪامي: $e' : 'Registration failed: $e'}")),
       );
       setState(() => _isLoading = false);
     }
@@ -120,14 +105,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
       if (user != null && user.emailVerified) {
         timer.cancel();
-        await _firestore.collection('users').doc(phone).update({
-          'emailVerified': true,
-        });
+        await _firestore.collection('users').doc(phone).update({'emailVerified': true});
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  "✅ ${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل تصديق ٿي وئي آهي! رهنمائي ٿي رهي آهي...' : 'Email verified! Redirecting...'}")),
+          SnackBar(content: Text("✅ ${Provider.of<LanguageProvider>(context, listen: false).isSindhi ? 'اي ميل تصديق ٿي وئي آهي! رهنمائي ٿي رهي آهي...' : 'Email verified! Redirecting...'}")),
         );
 
         _navigateToUserForm(phone);
@@ -158,18 +139,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       );
     }
 
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => nextScreen));
+    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => nextScreen));
   }
 
   @override
   Widget build(BuildContext context) {
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+
     if (_waitingForVerification) {
       return Scaffold(
         appBar: AppBar(
-            title: Text(
-                "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل جي تصديق گهرجي' : 'Email Verification Required'}"),
-            backgroundColor: Colors.blueAccent),
+          title: Text(isSindhi ? 'اي ميل جي تصديق گهرجي' : 'Email Verification Required'),
+          backgroundColor: Colors.blueAccent,
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -177,12 +159,12 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               Icon(Icons.email, size: 80, color: Colors.blueAccent),
               SizedBox(height: 20),
               Text(
-                "${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري پنهنجو اي ميل تصديق ڪريو' : 'Please verify your email to continue'}",
+                isSindhi ? 'مھرباني ڪري پنهنجو اي ميل تصديق ڪريو' : 'Please verify your email to continue',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),
               Text(
-                "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل تي تصديق جو لنڪ موڪليو ويو آهي.' : 'A verification link has been sent to your email.'}",
+                isSindhi ? 'اي ميل تي تصديق جو لنڪ موڪليو ويو آهي.' : 'A verification link has been sent to your email.',
                 textAlign: TextAlign.center,
               ),
               SizedBox(height: 30),
@@ -195,56 +177,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     return Scaffold(
       appBar: AppBar(
-          title: Text(
-              "${Provider.of<LanguageProvider>(context).isSindhi ? 'پنهنجي اڪائونٽ کي رجسٽر ڪريو' : 'Register Your Account'}"),
-          backgroundColor: Colors.blueAccent),
+        title: Text(
+          isSindhi ? 'پنهنجي اڪائونٽ کي رجسٽر ڪريو' : 'Register Your Account',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.blue.shade800,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.language, color: Colors.white),
+            onPressed: () {
+              Provider.of<LanguageProvider>(context, listen: false).toggleLanguage();
+            },
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
-              _buildTextField(
-                  _nameController,
-                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'نالو' : 'Name'}",
-                  Icons.person),
-              _buildTextField(
-                  _emailController,
-                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'اي ميل' : 'Email'}",
-                  Icons.email,
-                  keyboardType: TextInputType.emailAddress),
-              _buildTextField(
-                  _nicController,
-                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'اين آءِ سي نمبر' : 'NIC Number'}",
-                  Icons.credit_card,
-                  keyboardType: TextInputType.number,
-                  nicValidation: true),
-              _buildTextField(
-                  _passwordController,
-                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'پاسورڊ' : 'Password'}",
-                  Icons.lock,
-                  obscureText: true),
-              _buildTextField(
-                  _phoneController,
-                  "${Provider.of<LanguageProvider>(context).isSindhi ? 'موبائل نمبر' : 'Phone Number'}",
-                  Icons.phone,
-                  keyboardType: TextInputType.phone,
-                  phoneValidation: true),
+              _buildTextField(_nameController, isSindhi ? 'نالو' : 'Name', Icons.person),
+              _buildTextField(_emailController, isSindhi ? 'اي ميل' : 'Email', Icons.email, keyboardType: TextInputType.emailAddress),
+              _buildTextField(_nicController, isSindhi ? 'اين آءِ سي نمبر' : 'NIC Number', Icons.credit_card,
+                  keyboardType: TextInputType.number, nicValidation: true),
+              _buildTextField(_passwordController, isSindhi ? 'پاسورڊ' : 'Password', Icons.lock, obscureText: true),
+              _buildTextField(_phoneController, isSindhi ? 'موبائل نمبر' : 'Phone Number', Icons.phone,
+                  keyboardType: TextInputType.phone, phoneValidation: true),
               SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: selectedUserType,
                 decoration: InputDecoration(
-                    labelText:
-                        "${Provider.of<LanguageProvider>(context).isSindhi ? 'صارف جو قسم چونڊيو' : 'Select User Type'}",
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12))),
-                items: userTypes
-                    .map((userType) => DropdownMenuItem(
-                        value: userType, child: Text(userType)))
-                    .toList(),
+                  labelText: isSindhi ? 'صارف جو قسم چونڊيو' : 'Select User Type',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                items: userTypes.map((userType) => DropdownMenuItem(value: userType, child: Text(userType))).toList(),
                 onChanged: (value) => setState(() => selectedUserType = value),
                 validator: (value) => value == null
-                    ? '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري صارف جو قسم چونڊيو' : 'Please select a user type'}'
+                    ? '❌ ${isSindhi ? 'مھرباني ڪري صارف جو قسم چونڊيو' : 'Please select a user type'}'
                     : null,
               ),
               SizedBox(height: 30),
@@ -252,10 +222,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ? CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _registerUser,
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade700),
                       child: Text(
-                        "${Provider.of<LanguageProvider>(context).isSindhi ? 'رجسٽر ڪريو' : 'Register'}",
+                        isSindhi ? 'رجسٽر ڪريو' : 'Register',
                         style: TextStyle(color: Colors.white, fontSize: 16),
                       ),
                     ),
@@ -266,12 +235,13 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
-  Widget _buildTextField(
-      TextEditingController controller, String label, IconData icon,
+  Widget _buildTextField(TextEditingController controller, String label, IconData icon,
       {TextInputType keyboardType = TextInputType.text,
       bool obscureText = false,
       bool nicValidation = false,
       bool phoneValidation = false}) {
+    final isSindhi = Provider.of<LanguageProvider>(context, listen: false).isSindhi;
+
     return Padding(
       padding: EdgeInsets.only(bottom: 12),
       child: TextFormField(
@@ -279,17 +249,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         keyboardType: keyboardType,
         obscureText: obscureText,
         decoration: InputDecoration(
-            labelText: label,
-            prefixIcon: Icon(icon),
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+          labelText: label,
+          prefixIcon: Icon(icon),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
         validator: (value) {
           if (value == null || value.trim().isEmpty)
-            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'مھرباني ڪري $label داخل ڪريو' : 'Please enter $label'}';
+            return '❌ ${isSindhi ? 'مھرباني ڪري $label داخل ڪريو' : 'Please enter $label'}';
           if (nicValidation && value.length != 13)
-            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'اين آءِ سي ۾ بالڪل 13 انگ هجڻ گهرجن' : 'NIC must be exactly 13 digits'}';
+            return '❌ ${isSindhi ? 'اين آءِ سي ۾ بالڪل 13 انگ هجڻ گهرجن' : 'NIC must be exactly 13 digits'}';
           if (phoneValidation && value.length != 11)
-            return '❌ ${Provider.of<LanguageProvider>(context).isSindhi ? 'موبائل نمبر ۾ بالڪل 11 انگ هجڻ گهرجن' : 'Phone must be exactly 11 digits'}';
+            return '❌ ${isSindhi ? 'موبائل نمبر ۾ بالڪل 11 انگ هجڻ گهرجن' : 'Phone must be exactly 11 digits'}';
           return null;
         },
       ),

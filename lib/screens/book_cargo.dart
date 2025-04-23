@@ -175,7 +175,9 @@ class BookCargoScreen extends StatelessWidget {
                                       color: Colors.white),
                                   label: Text(isSindhi
                                       ? "پورو ٿي ويو"
-                                      : "Mark as Delivered"),
+                                      : "Mark as Delivered",
+                                      style: TextStyle(color: Colors.white),
+                                  ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue),
                                 ),
@@ -192,6 +194,7 @@ class BookCargoScreen extends StatelessWidget {
                                   icon: Icon(Icons.location_on,
                                       color: Colors.white),
                                   label: Text(isSindhi ? "ٽريڪ ڪريو" : "Track",
+                                      style: TextStyle(color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.purple),
