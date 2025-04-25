@@ -3,16 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'cargo_tracking_screen.dart';
 import 'cargo_actions.dart';
-import '../providers/language_provider.dart'; // <-- Add this line
-import 'package:provider/provider.dart'; // <-- Add this too
+import '../providers/language_provider.dart';
+import 'package:provider/provider.dart';
+import '../services/location_service.dart';
 
 class BookCargoScreen extends StatelessWidget {
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
-    final isSindhi =
-        Provider.of<LanguageProvider>(context).isSindhi; // <-- Dynamic language
+    final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
 
     return Scaffold(
       appBar: AppBar(
@@ -87,8 +87,7 @@ class BookCargoScreen extends StatelessWidget {
                         userSnapshot.data!.docs.isNotEmpty) {
                       var userData = userSnapshot.data!.docs.first.data()
                           as Map<String, dynamic>;
-                      requestedByPhone = userData['phone'] ??
-                          (isSindhi ? "فراہم ناهي" : "Not Provided");
+                      requestedByPhone = userData['phone'] ?? "Not Provided";
                     } else {
                       requestedByPhone =
                           isSindhi ? "يوزر نٿو ملي" : "User not found";
@@ -173,10 +172,11 @@ class BookCargoScreen extends StatelessWidget {
                                       markAsDelivered(bookingId, context),
                                   icon: Icon(Icons.check_circle,
                                       color: Colors.white),
-                                  label: Text(isSindhi
-                                      ? "پورو ٿي ويو"
-                                      : "Mark as Delivered",
-                                      style: TextStyle(color: Colors.white),
+                                  label: Text(
+                                    isSindhi
+                                        ? "پورو ٿي ويو"
+                                        : "Mark as Delivered",
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.blue),
@@ -193,8 +193,9 @@ class BookCargoScreen extends StatelessWidget {
                                   },
                                   icon: Icon(Icons.location_on,
                                       color: Colors.white),
-                                  label: Text(isSindhi ? "ٽريڪ ڪريو" : "Track",
-                                      style: TextStyle(color: Colors.white),
+                                  label: Text(
+                                    isSindhi ? "ٽريڪ ڪريو" : "Track",
+                                    style: TextStyle(color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.purple),
@@ -212,5 +213,46 @@ class BookCargoScreen extends StatelessWidget {
         },
       ),
     );
+  }
+
+  Future<void> markAsDelivered(String bookingId, BuildContext context) async {
+    try {
+      final position = await LocationService.getCurrentLocation();
+      final city = await LocationService.getCityFromCoordinates(position);
+
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingId)
+          .update({'status': 'Delivered'});
+
+      await FirebaseFirestore.instance
+          .collection('cargo_tracking')
+          .doc(bookingId)
+          .collection('progress')
+          .add({
+        'city': city.trim().toLowerCase(),
+        'timestamp': DateTime.now().toString(),
+        'delivered': true,
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Marked as delivered and location updated.")));
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to mark as delivered: $e")));
+    }
+  }
+
+  Color getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange;
+      case 'accepted':
+        return Colors.green;
+      case 'delivered':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 }
