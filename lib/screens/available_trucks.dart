@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../providers/language_provider.dart'; // Import your LanguageProvider here
+import 'owner_trucks_screen.dart'; // Import the OwnerTrucksScreen
 
 class AvailableTrucksScreen extends StatelessWidget {
   @override
@@ -72,7 +73,13 @@ class AvailableTrucksScreen extends StatelessWidget {
                           trailing: Icon(Icons.arrow_forward_ios,
                               color: Colors.blue.shade900),
                           onTap: () {
-                            // Navigate to truck details page if needed
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => OwnerTrucksScreen(
+                                    ownerPhoneNumber: owner.id),
+                              ),
+                            );
                           },
                         ),
                       );

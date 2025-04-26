@@ -95,6 +95,7 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
 
 Future<void> rejectCargo(String bookingId, BuildContext context) async {
   if (currentUser == null) return;
+
   final isSindhi =
       Provider.of<LanguageProvider>(context, listen: false).isSindhi;
   final bookingRef =
@@ -113,8 +114,8 @@ Future<void> rejectCargo(String bookingId, BuildContext context) async {
 
     final phone = userSnapshot.docs.first.data()['phone'] ?? '';
 
+    // 🚨 Only update rejectedBy, NOT status
     await bookingRef.update({
-      'status': 'Rejected',
       'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
     });
 
@@ -168,7 +169,8 @@ Future<void> sendNotificationToCargoOwner({
       );
 
       if (response.statusCode != 200) {
-        print("❌ Notification error: ${response.statusCode} - ${response.body}");
+        print(
+            "❌ Notification error: ${response.statusCode} - ${response.body}");
       }
     }
   } catch (e) {

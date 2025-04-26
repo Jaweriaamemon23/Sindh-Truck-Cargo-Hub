@@ -16,8 +16,7 @@ class CargoTransporterDashboard extends StatefulWidget {
       _CargoTransporterDashboardState();
 }
 
-class _CargoTransporterDashboardState
-    extends State<CargoTransporterDashboard> {
+class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
   int _selectedIndex = 0;
 
   List<String> availableBookings = [];
@@ -78,7 +77,9 @@ class _CargoTransporterDashboardState
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          isSindhi ? 'ڪارگو ٽرانسپورٽر ڊيش بورڊ' : 'Cargo Transporter Dashboard',
+          isSindhi
+              ? 'ڪارگو ٽرانسپورٽر ڊيش بورڊ'
+              : 'Cargo Transporter Dashboard',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -91,18 +92,12 @@ class _CargoTransporterDashboardState
             onPressed: _logout,
             tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
           ),
-          PopupMenuButton<String>(
+          IconButton(
             icon: Icon(Icons.language, color: Colors.white),
             tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
-            onSelected: (value) {
+            onPressed: () {
               Provider.of<LanguageProvider>(context, listen: false)
                   .toggleLanguage();
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
-                PopupMenuItem(value: 'English', child: Text('English')),
-              ];
             },
           ),
         ],

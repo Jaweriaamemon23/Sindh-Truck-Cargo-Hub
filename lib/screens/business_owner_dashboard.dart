@@ -46,7 +46,8 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
           : BusinessOwnerFunctions.getTrackShipmentScreen(context) ??
               Center(child: Text("Error: Track Shipment screen is null")),
       Center(child: Text(isSindhi ? "بلانس ڏسو" : "View Invoice")),
-      Center(child: Text(isSindhi ? "پٽڻ جي حيثيت ڏسو" : "View Shipment Status")),
+      Center(
+          child: Text(isSindhi ? "پٽڻ جي حيثيت ڏسو" : "View Shipment Status")),
     ];
 
     return Scaffold(
@@ -69,18 +70,12 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
             },
             tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
           ),
-          PopupMenuButton<String>(
+          IconButton(
             icon: Icon(Icons.language, color: Colors.white),
             tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
-            onSelected: (value) {
+            onPressed: () {
               Provider.of<LanguageProvider>(context, listen: false)
                   .toggleLanguage();
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
-                PopupMenuItem(value: 'English', child: Text('English')),
-              ];
             },
           ),
         ],

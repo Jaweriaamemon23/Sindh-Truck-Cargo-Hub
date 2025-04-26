@@ -8,11 +8,12 @@ import 'package:provider/provider.dart';
 import '../services/location_service.dart';
 
 class BookCargoScreen extends StatelessWidget {
-  final User? currentUser = FirebaseAuth.instance.currentUser;
+
 
   @override
   Widget build(BuildContext context) {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
+    final User? currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       appBar: AppBar(

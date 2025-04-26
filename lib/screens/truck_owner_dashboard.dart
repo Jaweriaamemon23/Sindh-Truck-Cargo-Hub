@@ -58,18 +58,12 @@ class _TruckOwnerDashboardState extends State<TruckOwnerDashboard> {
             onPressed: _logout,
             tooltip: isSindhi ? 'لاگ آئوٽ' : 'Logout',
           ),
-          PopupMenuButton<String>(
+          IconButton(
             icon: Icon(Icons.language, color: Colors.white),
             tooltip: isSindhi ? 'ٻولي مٽايو' : 'Change Language',
-            onSelected: (value) {
+            onPressed: () {
               Provider.of<LanguageProvider>(context, listen: false)
                   .toggleLanguage();
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                PopupMenuItem(value: 'Sindhi', child: Text('Sindhi')),
-                PopupMenuItem(value: 'English', child: Text('English')),
-              ];
             },
           ),
         ],
