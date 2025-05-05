@@ -46,9 +46,10 @@ class _TruckOwnerFormState extends State<TruckOwnerForm> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(Provider.of<LanguageProvider>(context).isSindhi
-                  ? 'مھرباني ڪري تصويرون اپلوڊ ڪريو مڪمل رجسٽريشن لاءِ.'
-                  : 'Please upload images to complete registration.')),
+              content: Text(
+                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                      ? 'مھرباني ڪري تصويرون اپلوڊ ڪريو مڪمل رجسٽريشن لاءِ.'
+                      : 'Please upload images to complete registration.')),
         );
 
         Navigator.pushReplacement(
