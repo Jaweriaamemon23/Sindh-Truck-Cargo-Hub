@@ -8,8 +8,6 @@ import 'package:provider/provider.dart';
 import '../services/location_service.dart';
 
 class BookCargoScreen extends StatelessWidget {
-
-
   @override
   Widget build(BuildContext context) {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
@@ -136,8 +134,9 @@ class BookCargoScreen extends StatelessWidget {
                           Text(
                             "${isSindhi ? 'حالت:' : 'Status:'} $displayStatus",
                             style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: getStatusColor(displayStatus)),
+                              fontWeight: FontWeight.bold,
+                              color: getStatusColor(displayStatus),
+                            ),
                           ),
                           SizedBox(height: 10),
                           if (status == 'Pending')
@@ -148,18 +147,25 @@ class BookCargoScreen extends StatelessWidget {
                                   onPressed: () =>
                                       acceptCargo(bookingId, context),
                                   icon: Icon(Icons.check, color: Colors.white),
-                                  label:
-                                      Text(isSindhi ? "قبول ڪريو" : "Accept"),
+                                  label: Text(
+                                    isSindhi ? "قبول ڪريو" : "Accept",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.green),
+                                    backgroundColor: Colors.green,
+                                  ),
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () =>
                                       rejectCargo(bookingId, context),
                                   icon: Icon(Icons.cancel, color: Colors.white),
-                                  label: Text(isSindhi ? "رد ڪريو" : "Reject"),
+                                  label: Text(
+                                    isSindhi ? "رد ڪريو" : "Reject",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.red),
+                                    backgroundColor: Colors.red,
+                                  ),
                                 ),
                               ],
                             ),
@@ -180,7 +186,8 @@ class BookCargoScreen extends StatelessWidget {
                                     style: TextStyle(color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.blue),
+                                    backgroundColor: Colors.blue,
+                                  ),
                                 ),
                                 ElevatedButton.icon(
                                   onPressed: () {
@@ -199,7 +206,8 @@ class BookCargoScreen extends StatelessWidget {
                                     style: TextStyle(color: Colors.white),
                                   ),
                                   style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.purple),
+                                    backgroundColor: Colors.purple,
+                                  ),
                                 ),
                               ],
                             ),
@@ -236,11 +244,11 @@ class BookCargoScreen extends StatelessWidget {
         'delivered': true,
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Marked as delivered and location updated.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Marked as delivered and location updated.")));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text("Failed to mark as delivered: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Failed to mark as delivered: $e")));
     }
   }
 
