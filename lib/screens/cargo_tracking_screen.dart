@@ -183,11 +183,11 @@ class _CargoTrackingScreenState extends State<CargoTrackingScreen> {
   @override
   Widget build(BuildContext context) {
     final isSindhi = context.watch<LanguageProvider>().isSindhi;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: theme.scaffoldBackgroundColor, // ✅ Fixed: Respect system theme
 
-      // ✅ AppBar with left-aligned title
       appBar: AppBar(
         backgroundColor: Colors.blue.shade800,
         title: Align(
