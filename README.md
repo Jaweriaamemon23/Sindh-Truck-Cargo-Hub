@@ -117,6 +117,6 @@ Each user role will see a customized dashboard:
 
 If you experience issues, contact our support team at:
 
-* 📧 Email: [sindhcargohub@gmail.com]
+* 📧 Email: [sindhtruckcargohub@gmail.com]
 * ☎️ Phone: 03333139607,03073686863,03138849044
 web: https://sindh-truck-cargo-hub-admin.vercel.app
