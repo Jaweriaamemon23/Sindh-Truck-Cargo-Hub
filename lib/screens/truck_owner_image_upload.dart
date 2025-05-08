@@ -29,21 +29,33 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
   Uint8List? _vehicleImage;
   bool _isUploading = false;
 
-  Future<void> _pickImage(String type) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-    );
+  bool _isPickingImage = false;
 
-    if (result != null && result.files.single.bytes != null) {
-      setState(() {
-        if (type == "NIC_Front") {
-          _nicFrontImage = result.files.single.bytes;
-        } else if (type == "NIC_Back") {
-          _nicBackImage = result.files.single.bytes;
-        } else if (type == "Vehicle") {
-          _vehicleImage = result.files.single.bytes;
-        }
-      });
+  Future<void> _pickImage(String type) async {
+    if (_isPickingImage) return;
+    _isPickingImage = true;
+
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
+
+      if (result != null && result.files.single.bytes != null) {
+        setState(() {
+          if (type == "NIC_Front") {
+            _nicFrontImage = result.files.single.bytes;
+          } else if (type == "NIC_Back") {
+            _nicBackImage = result.files.single.bytes;
+          } else if (type == "Vehicle") {
+            _vehicleImage = result.files.single.bytes;
+          }
+        });
+      }
+    } catch (e) {
+      print("❌ Error picking image: $e");
+    } finally {
+      _isPickingImage = false;
     }
   }
 
@@ -114,21 +126,33 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
 
     return Scaffold(
-      appBar: AppBar(title: Text(isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Truck Owner Images")),
+      appBar: AppBar(
+          title: Text(
+              isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Truck Owner Images")),
       body: Center(
         child: SingleChildScrollView(
           child: Column(
             children: [
               _buildImagePicker(
-                  isSindhi ? "این آئی سی فرنٹ اپ لوڈ کریں" : "Upload NIC Front", "NIC_Front", _nicFrontImage),
-              _buildImagePicker(isSindhi ? "این آئی سی بیک اپ لوڈ کریں" : "Upload NIC Back", "NIC_Back", _nicBackImage),
+                  isSindhi ? "این آئی سی فرنٹ اپ لوڈ کریں" : "Upload NIC Front",
+                  "NIC_Front",
+                  _nicFrontImage),
               _buildImagePicker(
-                  isSindhi ? "گاڑی کی تصویر اپ لوڈ کریں" : "Upload Vehicle Image", "Vehicle", _vehicleImage),
+                  isSindhi ? "این آئی سی بیک اپ لوڈ کریں" : "Upload NIC Back",
+                  "NIC_Back",
+                  _nicBackImage),
+              _buildImagePicker(
+                  isSindhi
+                      ? "گاڑی کی تصویر اپ لوڈ کریں"
+                      : "Upload Vehicle Image",
+                  "Vehicle",
+                  _vehicleImage),
               _isUploading
                   ? CircularProgressIndicator()
                   : ElevatedButton(
                       onPressed: _uploadImages,
-                      child: Text(isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Images"),
+                      child: Text(
+                          isSindhi ? "تصویریں اپ لوڈ کریں" : "Upload Images"),
                     ),
             ],
           ),

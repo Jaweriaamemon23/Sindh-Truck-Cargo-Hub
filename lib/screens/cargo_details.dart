@@ -27,6 +27,38 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     'Perishable Goods'
   ];
   final List<String> cities = ['Karachi', 'Hyderabad', 'Sukkur', 'Larkana'];
+  List<Map<String, String>> businessOwners = [];
+  String? selectedBusinessOwnerPhone;
+  @override
+  void initState() {
+    super.initState();
+    _fetchBusinessOwners();
+  }
+
+  void _fetchBusinessOwners() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('userType', isEqualTo: 'Business Owner')
+          .get();
+
+      final owners = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'uid': doc.id,
+          'phone':
+              (data['phone'] ?? 'Unknown').toString(), // Ensure it's a String
+        };
+      }).toList();
+
+      setState(() {
+        businessOwners =
+            List<Map<String, String>>.from(owners); // Ensure type safety
+      });
+    } catch (e) {
+      print("❌ Error fetching business owners: $e");
+    }
+  }
 
   double? estimatedPrice;
 
@@ -61,7 +93,6 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
       );
     }
   }
-
 
   Future<void> storeNotificationInFirestore({
     required String cargoDetails,
@@ -258,6 +289,33 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     );
   }
 
+  void _autoFillDistance() {
+    if (selectedStartCity == selectedEndCity) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Start and End cities cannot be the same.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      setState(() {
+        _distanceController.text = "0";
+        estimatedPrice = null;
+      });
+      return;
+    }
+
+    final match = predefinedDistances.firstWhere(
+      (d) =>
+          d["route"] == "$selectedStartCity → $selectedEndCity" ||
+          d["route"] == "$selectedEndCity → $selectedStartCity",
+      orElse: () => {},
+    );
+
+    if (match.isNotEmpty) {
+      _distanceController.text = match["distance"].toString();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -285,12 +343,22 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
                   (newValue) {
                 setState(() {
                   selectedStartCity = newValue;
+
+                  // Auto-fill distance if both cities are selected
+                  if (selectedStartCity != null && selectedEndCity != null) {
+                    _autoFillDistance();
+                  }
                 });
               }),
               SizedBox(height: 10),
               _buildDropdown('End City', selectedEndCity, cities, (newValue) {
                 setState(() {
                   selectedEndCity = newValue;
+
+                  // Auto-fill distance if both cities are selected
+                  if (selectedStartCity != null && selectedEndCity != null) {
+                    _autoFillDistance();
+                  }
                 });
               }),
               SizedBox(height: 10),
@@ -432,17 +500,33 @@ class _CargoDetailsScreenState extends State<CargoDetailsScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text("Enter Business Owner ID (UID provided by owner)",
+        Text("Select Business Owner (Phone)",
             style: TextStyle(
                 fontSize: 16, fontWeight: FontWeight.bold, color: Colors.blue)),
         SizedBox(height: 5),
-        TextField(
-          controller: _businessOwnerIdController,
+        DropdownButtonFormField<String>(
+          value: selectedBusinessOwnerPhone,
           decoration: InputDecoration(
-            hintText: 'Business Owner UID',
             border: OutlineInputBorder(),
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           ),
+          items: businessOwners.map((owner) {
+            return DropdownMenuItem<String>(
+              value: owner['phone'],
+              child: Text(owner['phone'] ?? ''),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              selectedBusinessOwnerPhone = value;
+
+              // Find corresponding UID
+              final owner = businessOwners.firstWhere(
+                  (o) => o['phone'] == value,
+                  orElse: () => {'uid': ''});
+              _businessOwnerIdController.text = owner['uid']!;
+            });
+          },
         ),
       ],
     );

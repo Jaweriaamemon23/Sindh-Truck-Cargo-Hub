@@ -226,24 +226,29 @@ class BookCargoScreen extends StatelessWidget {
 
   Future<void> markAsDelivered(String bookingId, BuildContext context) async {
     try {
+      // Get the current location
       final position = await LocationService.getCurrentLocation();
       final city = await LocationService.getCityFromCoordinates(position);
 
+      // Update the booking status to 'Delivered'
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(bookingId)
           .update({'status': 'Delivered'});
 
+      // Add a new entry in the cargo_tracking collection with booking_id
       await FirebaseFirestore.instance
           .collection('cargo_tracking')
-          .doc(bookingId)
+          .doc(bookingId) // Using bookingId as the document ID
           .collection('progress')
           .add({
+        'booking_id': bookingId, // Link to the booking using its document ID
         'city': city.trim().toLowerCase(),
         'timestamp': DateTime.now().toString(),
         'delivered': true,
       });
 
+      // Show confirmation snackbar
       ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Marked as delivered and location updated.")));
     } catch (e) {

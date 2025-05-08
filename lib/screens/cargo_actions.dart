@@ -40,6 +40,18 @@ Future<void> markAsDelivered(String bookingId, BuildContext context) async {
       'deliveryDate': FieldValue.serverTimestamp(),
     });
 
+    // 2. Add to cargo_tracking collection using bookingId
+    await FirebaseFirestore.instance
+        .collection('cargo_tracking')
+        .doc(bookingId) // Use bookingId as the document ID
+        .collection('progress')
+        .add({
+      'booking_id': bookingId, // Store the bookingId
+      'status': 'Delivered',
+      'timestamp': DateTime.now().toString(),
+      'delivered': true,
+    });
+
     await sendNotificationToCargoOwner(
       context: context,
       phone: phone,
@@ -77,6 +89,17 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
     await bookingRef.update({
       'status': 'Accepted',
       'acceptedBy': currentUser!.email,
+    });
+
+    // 1. Add to cargo_tracking collection using bookingId
+    await FirebaseFirestore.instance
+        .collection('cargo_tracking')
+        .doc(bookingId) // Use bookingId as the document ID
+        .collection('progress')
+        .add({
+      'booking_id': bookingId, // Store the bookingId
+      'status': 'Accepted',
+      'timestamp': DateTime.now().toString(),
     });
 
     await sendNotificationToCargoOwner(
