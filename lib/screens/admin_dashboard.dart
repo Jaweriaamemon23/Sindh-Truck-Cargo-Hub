@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:sindh_truck_cargo_hub/screens/available_user.dart';
 import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
+import 'package:sindh_truck_cargo_hub/screens/reports_screen.dart';
 import 'package:sindh_truck_cargo_hub/screens/login_screen.dart';
 import '../providers/language_provider.dart';
 
@@ -15,6 +16,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
+    ReportsScreen(),
     AvailableUsersScreen(),
     FeedbackScreen(),
   ];
@@ -80,6 +82,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         backgroundColor: Colors.blue.shade800,
         unselectedItemColor: Colors.white60,
         items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: isSindhi ? ' رپورٽ' : 'Reports',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: isSindhi ? 'استعمال ڪندڙ' : 'Users',
