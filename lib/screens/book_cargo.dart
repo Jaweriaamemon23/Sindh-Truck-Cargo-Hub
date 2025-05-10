@@ -7,7 +7,14 @@ import '../providers/language_provider.dart';
 import 'package:provider/provider.dart';
 import '../services/location_service.dart';
 
-class BookCargoScreen extends StatelessWidget {
+class BookCargoScreen extends StatefulWidget {
+  @override
+  _BookCargoScreenState createState() => _BookCargoScreenState();
+}
+
+class _BookCargoScreenState extends State<BookCargoScreen> {
+  String selectedFilter = 'All';
+
   @override
   Widget build(BuildContext context) {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
@@ -21,239 +28,427 @@ class BookCargoScreen extends StatelessWidget {
         ),
         backgroundColor: Colors.blue.shade800,
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('bookings').snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(isSindhi
-                  ? "❌ بوڪنگس لوڊ ڪرڻ ۾ غلطي!"
-                  : "❌ Error loading bookings!"),
-            );
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-
-          var bookings = snapshot.data?.docs ?? [];
-
-          bookings = bookings.where((doc) {
-            var data = doc.data() as Map<String, dynamic>;
-            List<dynamic> rejectedBy = data['rejectedBy'] ?? [];
-            List<dynamic> removedBy = data['removedBy'] ?? [];
-            return !(rejectedBy.contains(currentUser?.uid) ||
-                removedBy.contains(currentUser?.uid));
-          }).toList();
-
-          if (bookings.isEmpty) {
-            return Center(
-              child: Text(
-                isSindhi ? "ڪابه بوڪنگ دستياب ناهي." : "No bookings available.",
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: EdgeInsets.all(16),
-            itemCount: bookings.length,
-            itemBuilder: (context, index) {
-              var bookingDoc = bookings[index];
-              var bookingData = bookingDoc.data() as Map<String, dynamic>;
-              String bookingId = bookingDoc.id;
-
-              String status = bookingData['status'] ?? 'Pending';
-              String acceptedBy = bookingData['acceptedBy'] ?? '';
-              String requestedByEmail = bookingData['email'] ?? '';
-
-              bool isAcceptedByAnother =
-                  status == "Accepted" && acceptedBy != currentUser?.email;
-              String displayStatus = isAcceptedByAnother
-                  ? (isSindhi ? "دستياب ناهي" : "Not Available")
-                  : status;
-
-              return FutureBuilder<QuerySnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .where('email', isEqualTo: requestedByEmail)
-                    .limit(1)
-                    .get(),
-                builder: (context, userSnapshot) {
-                  String requestedByPhone =
-                      isSindhi ? "لوڊ ٿي رهيو آهي..." : "Loading...";
-
-                  if (userSnapshot.connectionState == ConnectionState.done) {
-                    if (userSnapshot.hasData &&
-                        userSnapshot.data!.docs.isNotEmpty) {
-                      var userData = userSnapshot.data!.docs.first.data()
-                          as Map<String, dynamic>;
-                      requestedByPhone = userData['phone'] ?? "Not Provided";
-                    } else {
-                      requestedByPhone =
-                          isSindhi ? "يوزر نٿو ملي" : "User not found";
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                Text(
+                  isSindhi ? "فلٽر:" : "Filter:",
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(width: 10),
+                DropdownButton<String>(
+                  value: selectedFilter,
+                  items: ['All', 'Accepted', 'Pending'].map((filter) {
+                    return DropdownMenuItem<String>(
+                      value: filter,
+                      child: Text(isSindhi
+                          ? (filter == 'All'
+                              ? 'سڀئي'
+                              : filter == 'Accepted'
+                                  ? 'قبول ٿيل'
+                                  : 'زير التواءِ')
+                          : filter),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        selectedFilter = value;
+                      });
                     }
-                  }
-
-                  return Card(
-                    elevation: 3,
-                    margin: EdgeInsets.symmetric(vertical: 8),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(Icons.local_shipping,
-                                  color: Colors.blue, size: 30),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  "${isSindhi ? 'ڪارگو:' : 'Cargo:'} ${bookingData['cargoType'] ?? 'N/A'}",
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 8),
-                          Text(
-                              "${isSindhi ? 'کان:' : 'From:'} ${bookingData['startCity'] ?? 'Unknown'}"),
-                          Text(
-                              "${isSindhi ? 'تائئن:' : 'To:'} ${bookingData['endCity'] ?? 'Unknown'}"),
-                          Text(
-                              "${isSindhi ? 'وزن:' : 'Weight:'} ${bookingData['weight']} tons"),
-                          Text(
-                              "${isSindhi ? 'فاصلو:' : 'Distance:'} ${bookingData['distance']} km"),
-                          Text(
-                              "${isSindhi ? 'قيمت:' : 'Price:'} Rs. ${bookingData['price']}"),
-                          Text(
-                              "${isSindhi ? 'فون:' : 'Phone:'} $requestedByPhone"),
-                          Text(
-                            "${isSindhi ? 'حالت:' : 'Status:'} $displayStatus",
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: getStatusColor(displayStatus),
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          if (status == 'Pending')
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      acceptCargo(bookingId, context),
-                                  icon: Icon(Icons.check, color: Colors.white),
-                                  label: Text(
-                                    isSindhi ? "قبول ڪريو" : "Accept",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                  ),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      rejectCargo(bookingId, context),
-                                  icon: Icon(Icons.cancel, color: Colors.white),
-                                  label: Text(
-                                    isSindhi ? "رد ڪريو" : "Reject",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.red,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          if (status == "Accepted" &&
-                              acceptedBy == currentUser?.email)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                ElevatedButton.icon(
-                                  onPressed: () =>
-                                      markAsDelivered(bookingId, context),
-                                  icon: Icon(Icons.check_circle,
-                                      color: Colors.white),
-                                  label: Text(
-                                    isSindhi
-                                        ? "پورو ٿي ويو"
-                                        : "Mark as Delivered",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blue,
-                                  ),
-                                ),
-                                ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => CargoTrackingScreen(
-                                            bookingId: bookingId),
-                                      ),
-                                    );
-                                  },
-                                  icon: Icon(Icons.location_on,
-                                      color: Colors.white),
-                                  label: Text(
-                                    isSindhi ? "ٽريڪ ڪريو" : "Track",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.purple,
-                                  ),
-                                ),
-                              ],
-                            ),
-                        ],
-                      ),
-                    ),
+                  },
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('bookings')
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(isSindhi
+                        ? "❌ بوڪنگس لوڊ ڪرڻ ۾ غلطي!"
+                        : "❌ Error loading bookings!"),
                   );
-                },
-              );
-            },
-          );
-        },
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+
+                var bookings = snapshot.data?.docs ?? [];
+
+                bookings = bookings.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  List<dynamic> rejectedBy = data['rejectedBy'] ?? [];
+                  List<dynamic> removedBy = data['removedBy'] ?? [];
+                  bool notRejected = !(rejectedBy.contains(currentUser?.uid) ||
+                      removedBy.contains(currentUser?.uid));
+
+                  if (selectedFilter == 'All') return notRejected;
+                  if (selectedFilter == 'Accepted') {
+                    return notRejected &&
+                        data['status'] == 'Accepted' &&
+                        data['acceptedBy'] == currentUser?.email;
+                  }
+                  if (selectedFilter == 'Pending') {
+                    return notRejected && data['status'] == 'Pending';
+                  }
+                  return false;
+                }).toList();
+
+                if (bookings.isEmpty) {
+                  return Center(
+                    child: Text(isSindhi
+                        ? "ڪابه بوڪنگ دستياب ناهي."
+                        : "No bookings available."),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.all(16),
+                  itemCount: bookings.length,
+                  itemBuilder: (context, index) {
+                    var bookingDoc = bookings[index];
+                    var bookingData =
+                        bookingDoc.data() as Map<String, dynamic>;
+                    String bookingId = bookingDoc.id;
+
+                    String status = bookingData['status'] ?? 'Pending';
+                    String acceptedBy = bookingData['acceptedBy'] ?? '';
+                    String requestedByEmail = bookingData['email'] ?? '';
+
+                    bool isAcceptedByAnother = status == "Accepted" &&
+                        acceptedBy != currentUser?.email;
+                    String displayStatus = isAcceptedByAnother
+                        ? (isSindhi ? "دستياب ناهي" : "Not Available")
+                        : status;
+
+                    return FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('users')
+                          .where('email', isEqualTo: requestedByEmail)
+                          .limit(1)
+                          .get(),
+                      builder: (context, userSnapshot) {
+                        String requestedByPhone = isSindhi
+                            ? "لوڊ ٿي رهيو آهي..."
+                            : "Loading...";
+
+                        if (userSnapshot.connectionState ==
+                            ConnectionState.done) {
+                          if (userSnapshot.hasData &&
+                              userSnapshot.data!.docs.isNotEmpty) {
+                            var userData = userSnapshot.data!.docs.first.data()
+                                as Map<String, dynamic>;
+                            requestedByPhone =
+                                userData['phone'] ?? "Not Provided";
+                          } else {
+                            requestedByPhone = isSindhi
+                                ? "يوزر نٿو ملي"
+                                : "User not found";
+                          }
+                        }
+
+                        return Card(
+                          elevation: 3,
+                          margin: EdgeInsets.symmetric(vertical: 8),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          child: Padding(
+                            padding: EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.local_shipping,
+                                        color: Colors.blue, size: 30),
+                                    SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        "${isSindhi ? 'ڪارگو:' : 'Cargo:'} ${bookingData['cargoType'] ?? 'N/A'}",
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                SizedBox(height: 8),
+                                Text(
+                                    "${isSindhi ? 'کان:' : 'From:'} ${bookingData['startCity'] ?? 'Unknown'}"),
+                                Text(
+                                    "${isSindhi ? 'تائئن:' : 'To:'} ${bookingData['endCity'] ?? 'Unknown'}"),
+                                Text(
+                                    "${isSindhi ? 'وزن:' : 'Weight:'} ${bookingData['weight']} tons"),
+                                Text(
+                                    "${isSindhi ? 'فاصلو:' : 'Distance:'} ${bookingData['distance']} km"),
+                                Text(
+                                    "${isSindhi ? 'قيمت:' : 'Price:'} Rs. ${bookingData['price']}"),
+                                Text(
+                                    "${isSindhi ? 'فون:' : 'Phone:'} $requestedByPhone"),
+                                Text(
+                                  "${isSindhi ? 'حالت:' : 'Status:'} $displayStatus",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: getStatusColor(displayStatus),
+                                  ),
+                                ),
+                                SizedBox(height: 10),
+                                if (status == 'Pending')
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              content: Text(isSindhi
+                                                  ? 'ڇا توهان واقعي هيءَ بوڪنگ قبول ڪرڻ چاهيو ٿا؟'
+                                                  : 'Are you sure you want to accept this booking?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx).pop(),
+                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.of(ctx).pop();
+                                                    acceptCargo(bookingId, context);
+                                                  },
+                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.check,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi ? "قبول ڪريو" : "Accept",
+                                          style:
+                                              TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              content: Text(isSindhi
+                                                  ? 'ڇا توهان واقعي هيءَ بوڪنگ رد ڪرڻ چاهيو ٿا؟'
+                                                  : 'Are you sure you want to reject this booking?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx).pop(),
+                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.of(ctx).pop();
+                                                    rejectCargo(bookingId, context);
+                                                  },
+                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.cancel,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi ? "رد ڪريو" : "Reject",
+                                          style:
+                                              TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (status == "Accepted" &&
+                                    acceptedBy == currentUser?.email)
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              content: Text(isSindhi
+                                                  ? 'ڇا توهان واقعي هن بوڪنگ کي پورو طور تي نشان لڳائڻ چاهيو ٿا؟'
+                                                  : 'Are you sure you want to mark this booking as delivered?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.of(ctx).pop(),
+                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.of(ctx).pop();
+                                                    markAsDelivered(bookingId, context);
+                                                  },
+                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.check_circle,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi
+                                              ? "پورو ٿي ويو"
+                                              : "Mark as Delivered",
+                                          style:
+                                              TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) =>
+                                                  CargoTrackingScreen(
+                                                      bookingId: bookingId),
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.location_on,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi ? "ٽريڪ ڪريو" : "Track",
+                                          style:
+                                              TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.purple,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (isAcceptedByAnother)
+                                  Center(
+                                    child: ElevatedButton.icon(
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                            content: Text(isSindhi
+                                                ? 'ڇا توهان واقعي هيءَ بوڪنگ لسٽ مان هٽائڻ چاهيو ٿا؟'
+                                                : 'Are you sure you want to remove this booking from the list?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () => Navigator.of(ctx).pop(),
+                                                child: Text(isSindhi ? 'نه' : 'No'),
+                                              ),
+                                              ElevatedButton(
+                                                onPressed: () {
+                                                  Navigator.of(ctx).pop();
+                                                  removeBooking(bookingId, context);
+                                                },
+                                                child: Text(isSindhi ? 'ها' : 'Yes'),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      icon: Icon(Icons.delete_forever,
+                                          color: Colors.white),
+                                      label: Text(
+                                        isSindhi ? "هٽايو" : "Remove",
+                                        style: TextStyle(color: Colors.white),
+                                      ),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.grey.shade800,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Future<void> markAsDelivered(String bookingId, BuildContext context) async {
     try {
-      // Get the current location
       final position = await LocationService.getCurrentLocation();
       final city = await LocationService.getCityFromCoordinates(position);
 
-      // Update the booking status to 'Delivered'
       await FirebaseFirestore.instance
           .collection('bookings')
           .doc(bookingId)
           .update({'status': 'Delivered'});
 
-      // Add a new entry in the cargo_tracking collection with booking_id
       await FirebaseFirestore.instance
           .collection('cargo_tracking')
-          .doc(bookingId) // Using bookingId as the document ID
+          .doc(bookingId)
           .collection('progress')
           .add({
-        'booking_id': bookingId, // Link to the booking using its document ID
+        'booking_id': bookingId,
         'city': city.trim().toLowerCase(),
         'timestamp': DateTime.now().toString(),
         'delivered': true,
       });
 
-      // Show confirmation snackbar
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Marked as delivered and location updated.")));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("Marked as delivered and location updated."),
+      ));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed to mark as delivered: $e")));
+        SnackBar(content: Text("Failed to mark as delivered: $e")),
+      );
+    }
+  }
+
+  Future<void> removeBooking(String bookingId, BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
+        'removedBy': FieldValue.arrayUnion([user.uid]),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Booking removed successfully.")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to remove booking: $e")),
+      );
     }
   }
 
@@ -265,6 +460,8 @@ class BookCargoScreen extends StatelessWidget {
         return Colors.green;
       case 'delivered':
         return Colors.blue;
+      case 'not available':
+        return Colors.red;
       default:
         return Colors.grey;
     }

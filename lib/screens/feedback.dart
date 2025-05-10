@@ -108,7 +108,7 @@ class FeedbackScreen extends StatelessWidget {
         title: Text(
           "Truck Owners",
           style: TextStyle(color: Colors.white),
-          ),
+        ),
         backgroundColor: Colors.blue.shade800,
       ),
       body: StreamBuilder<QuerySnapshot>(
@@ -139,7 +139,7 @@ class FeedbackScreen extends StatelessWidget {
                 future: getAverageRating(email),
                 builder: (context, ratingSnapshot) {
                   final rating = ratingSnapshot.data ?? 0.0;
-                  final isLowRating = rating < 2.5;
+                  final isLowRating = rating > 0 && rating < 2.5; // ✅ Updated logic
 
                   return Card(
                     shape: RoundedRectangleBorder(

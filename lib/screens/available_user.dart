@@ -63,16 +63,20 @@ class _AvailableUsersScreenState extends State<AvailableUsersScreen> {
                   return Center(child: Text("No users found."));
                 }
 
-                // 🔽 Filter users based on selected role
                 final filteredUsers = snapshot.data!.docs.where((doc) {
-                  if (doc.id == '03333139670') return false;
-                  final data = doc.data() as Map<String, dynamic>;
+  if (doc.id == '03333139670') return false;
 
-                  if (!data.containsKey('userType')) return false;
-                  if (_userTypeFilter == 'All') return true;
+  final data = doc.data() as Map<String, dynamic>;
 
-                  return data['userType'] == _userTypeFilter;
-                }).toList();
+  // Exclude users without 'userType', with 'Admin' type, or specific email
+  if (!data.containsKey('userType') || data['userType'] == 'Admin') return false;
+  if (data['email'] == 'sindhtruckcargohub@gmail.com') return false;
+
+  // Apply user type filter
+  if (_userTypeFilter == 'All') return true;
+
+  return data['userType'] == _userTypeFilter;
+}).toList();
 
                 if (filteredUsers.isEmpty) {
                   return Center(child: Text("No users for this filter."));

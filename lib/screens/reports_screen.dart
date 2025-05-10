@@ -5,8 +5,21 @@ import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
 
 class ReportsScreen extends StatelessWidget {
   // User Role Counters
-  Future<int> getTotalUsers() async =>
-      (await FirebaseFirestore.instance.collection('users').get()).size;
+  Future<int> getTotalUsers() async {
+  final snapshot = await FirebaseFirestore.instance.collection('users').get();
+
+  final filteredUsers = snapshot.docs.where((doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    // Skip admin user and specific email
+    if (data['userType'] == 'Admin') return false;
+    if (data['email'] == 'sindhtruckcargohub@gmail.com') return false;
+
+    return true;
+  }).toList();
+
+  return filteredUsers.length;
+}
 
   Future<int> getUserCountByType(String type) async {
     var snapshot = await FirebaseFirestore.instance
