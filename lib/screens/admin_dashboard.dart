@@ -5,6 +5,7 @@ import 'package:sindh_truck_cargo_hub/screens/available_user.dart';
 import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
 import 'package:sindh_truck_cargo_hub/screens/reports_screen.dart';
 import 'package:sindh_truck_cargo_hub/screens/login_screen.dart';
+import 'package:sindh_truck_cargo_hub/screens/admin_graphs_screen.dart'; // Ensure this import is added
 import '../providers/language_provider.dart';
 
 class AdminDashboard extends StatefulWidget {
@@ -19,6 +20,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     ReportsScreen(),
     AvailableUsersScreen(),
     FeedbackScreen(),
+    AdminGraphsScreen(), // Add this line for the new graph screen
   ];
 
   void _onItemTapped(int index) {
@@ -78,9 +80,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
-        selectedItemColor: Colors.white,
-        backgroundColor: Colors.blue.shade800,
-        unselectedItemColor: Colors.white60,
+        selectedItemColor: Colors.white, // Color of the selected item
+        unselectedItemColor: Colors.white70, // Color of the unselected items
+        backgroundColor: Colors.blue.shade800, // Background color of the navbar
+        type: BottomNavigationBarType
+            .fixed, // Fixed type to handle more than 3 items
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
@@ -93,6 +97,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.feedback),
             label: isSindhi ? 'موٽ' : 'Feedback',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: isSindhi ? 'گراف' : 'Graphs',
           ),
         ],
       ),

@@ -23,6 +23,7 @@ dependencies:
   firebase_storage: ^12.2.0
   cloud_firestore: ^5.4.0
   image: ^4.0.17
+  fl_chart: ^0.64.0
   file_picker: ^9.0.2
   geolocator: ^13.0.4
   geocoding: ^3.0.0

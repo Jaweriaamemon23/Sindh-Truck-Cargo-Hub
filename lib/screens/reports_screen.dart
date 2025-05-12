@@ -2,24 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sindh_truck_cargo_hub/screens/available_user.dart';
 import 'package:sindh_truck_cargo_hub/screens/feedback.dart';
+import 'package:sindh_truck_cargo_hub/screens/filtered_bookings_screen.dart';
+import 'package:sindh_truck_cargo_hub/screens/FilteredUsersScreen.dart';
 
 class ReportsScreen extends StatelessWidget {
-  // User Role Counters
   Future<int> getTotalUsers() async {
-  final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
 
-  final filteredUsers = snapshot.docs.where((doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final filteredUsers = snapshot.docs.where((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['userType'] == 'Admin') return false;
+      if (data['email'] == 'sindhtruckcargohub@gmail.com') return false;
+      return true;
+    }).toList();
 
-    // Skip admin user and specific email
-    if (data['userType'] == 'Admin') return false;
-    if (data['email'] == 'sindhtruckcargohub@gmail.com') return false;
-
-    return true;
-  }).toList();
-
-  return filteredUsers.length;
-}
+    return filteredUsers.length;
+  }
 
   Future<int> getUserCountByType(String type) async {
     var snapshot = await FirebaseFirestore.instance
@@ -29,7 +27,6 @@ class ReportsScreen extends StatelessWidget {
     return snapshot.size;
   }
 
-  // Booking Status Counters
   Future<int> getTotalBookings() async =>
       (await FirebaseFirestore.instance.collection('bookings').get()).size;
 
@@ -42,7 +39,7 @@ class ReportsScreen extends StatelessWidget {
   }
 
   Future<int> getTotalFeedback() async =>
-    (await FirebaseFirestore.instance.collection('reviews').get()).size;
+      (await FirebaseFirestore.instance.collection('reviews').get()).size;
 
   @override
   Widget build(BuildContext context) {
@@ -87,22 +84,103 @@ class ReportsScreen extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => AvailableUsersScreen()),
+                      MaterialPageRoute(
+                          builder: (context) => AvailableUsersScreen()),
                     );
                   },
                   child: _buildReportTile("👥 Total Users", data[0]),
                 ),
-                _buildReportTile("🚛 Truck Owners", data[1]),
-                _buildReportTile("🧑‍🔧 Cargo Transporters", data[2]),
-                _buildReportTile("🏢 Business Owners", data[3]),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredUsersScreen(userType: 'Truck Owner')),
+                    );
+                  },
+                  child: _buildReportTile("🚛 Truck Owners", data[1]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => FilteredUsersScreen(
+                              userType: 'Cargo Transporter')),
+                    );
+                  },
+                  child: _buildReportTile("🧑‍🔧 Cargo Transporters", data[2]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredUsersScreen(userType: 'Business Owner')),
+                    );
+                  },
+                  child: _buildReportTile("🏢 Business Owners", data[3]),
+                ),
                 SizedBox(height: 16),
 
                 // Booking Stats
-                _buildReportTile("📦 Total Bookings", data[4]),
-                _buildReportTile("⏳ Pending Cargos", data[5]),
-                _buildReportTile("✅ Accepted Cargos", data[6]),
-                _buildReportTile("❌ Rejected Cargos", data[7]),
-                _buildReportTile("📬 Delivered Cargos", data[8]),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredBookingsScreen(status: "All")),
+                    );
+                  },
+                  child: _buildReportTile("📦 Total Bookings", data[4]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredBookingsScreen(status: "Pending")),
+                    );
+                  },
+                  child: _buildReportTile("⏳ Pending Cargos", data[5]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredBookingsScreen(status: "Accepted")),
+                    );
+                  },
+                  child: _buildReportTile("✅ Accepted Cargos", data[6]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredBookingsScreen(status: "Rejected")),
+                    );
+                  },
+                  child: _buildReportTile("❌ Rejected Cargos", data[7]),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) =>
+                              FilteredBookingsScreen(status: "Delivered")),
+                    );
+                  },
+                  child: _buildReportTile("📬 Delivered Cargos", data[8]),
+                ),
                 SizedBox(height: 16),
 
                 // Feedback

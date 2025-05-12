@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:provider/provider.dart'; // Required for context.watch
+import 'package:provider/provider.dart';
 import 'reviews.dart';
-import '../providers/language_provider.dart'; // Make sure you import your language provider
+import '../providers/language_provider.dart';
 
 class MyCargoScreen extends StatefulWidget {
   @override
@@ -13,6 +13,7 @@ class MyCargoScreen extends StatefulWidget {
 class _MyCargoScreenState extends State<MyCargoScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final CargoReviewSystem _reviewSystem = CargoReviewSystem();
+  String _selectedFilter = 'All'; // All, Accepted, Delivered
 
   Stream<QuerySnapshot> getCargoStream() {
     User? currentUser = _auth.currentUser;
@@ -145,9 +146,7 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
           alignment: Alignment.centerLeft,
           child: Text(
             isSindhi ? "منهنجو ڪارگو" : "My Cargo",
-            style: TextStyle(
-              color: Colors.white,
-            ),
+            style: TextStyle(color: Colors.white),
           ),
         ),
       ),
@@ -155,6 +154,40 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text(
+                  isSindhi ? "فلٽر: " : "Filter: ",
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: _selectedFilter,
+                  items: ['All', 'Accepted', 'Delivered'].map((status) {
+                    return DropdownMenuItem<String>(
+                      value: status,
+                      child: Text(
+                        isSindhi
+                            ? (status == 'Accepted'
+                                ? 'قبول ٿيل'
+                                : status == 'Delivered'
+                                    ? 'پهچايل'
+                                    : 'سڀ')
+                            : status,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedFilter = value;
+                      });
+                    }
+                  },
+                ),
+              ],
+            ),
             SizedBox(height: 8),
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
@@ -170,18 +203,27 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                         isSindhi
                             ? "توهان اڃا تائين ڪا به ڪارگو درخواست نه ڏني آهي."
                             : "You have not requested any cargo yet.",
-                        style:
-                            TextStyle(fontSize: 18, color: Colors.blue.shade900),
+                        style: TextStyle(
+                            fontSize: 18, color: Colors.blue.shade900),
                       ),
                     );
                   }
 
-                  var cargoList = snapshot.data!.docs;
+                  var allCargoList = snapshot.data!.docs;
+
+                  var cargoList = _selectedFilter == 'All'
+                      ? allCargoList
+                      : allCargoList.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final status = data['status'] ?? '';
+                          return status == _selectedFilter;
+                        }).toList();
 
                   return ListView.builder(
                     itemCount: cargoList.length,
                     itemBuilder: (context, index) {
-                      var cargo = cargoList[index].data() as Map<String, dynamic>;
+                      var cargo =
+                          cargoList[index].data() as Map<String, dynamic>;
 
                       String cargoType = cargo['cargoType'] ?? 'Unknown';
                       String startCity = cargo['startCity'] ?? 'Unknown';
