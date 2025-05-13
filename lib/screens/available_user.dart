@@ -24,8 +24,8 @@ class _AvailableUsersScreenState extends State<AvailableUsersScreen> {
             child: Row(
               children: [
                 Text("Filter by User Type:",
-                    style: TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16)),
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 SizedBox(width: 12),
                 DropdownButton<String>(
                   value: _userTypeFilter,
@@ -53,7 +53,10 @@ class _AvailableUsersScreenState extends State<AvailableUsersScreen> {
           // 🔽 Users list
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance.collection('users').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .where('verified', isEqualTo: true) // ✅ Only verified users
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
@@ -64,19 +67,21 @@ class _AvailableUsersScreenState extends State<AvailableUsersScreen> {
                 }
 
                 final filteredUsers = snapshot.data!.docs.where((doc) {
-  if (doc.id == '03333139670') return false;
+                  if (doc.id == '03333139670') return false;
 
-  final data = doc.data() as Map<String, dynamic>;
+                  final data = doc.data() as Map<String, dynamic>;
 
-  // Exclude users without 'userType', with 'Admin' type, or specific email
-  if (!data.containsKey('userType') || data['userType'] == 'Admin') return false;
-  if (data['email'] == 'sindhtruckcargohub@gmail.com') return false;
+                  // Exclude users without 'userType', with 'Admin' type, or specific email
+                  if (!data.containsKey('userType') ||
+                      data['userType'] == 'Admin') return false;
+                  if (data['email'] == 'sindhtruckcargohub@gmail.com')
+                    return false;
 
-  // Apply user type filter
-  if (_userTypeFilter == 'All') return true;
+                  // Apply user type filter
+                  if (_userTypeFilter == 'All') return true;
 
-  return data['userType'] == _userTypeFilter;
-}).toList();
+                  return data['userType'] == _userTypeFilter;
+                }).toList();
 
                 if (filteredUsers.isEmpty) {
                   return Center(child: Text("No users for this filter."));

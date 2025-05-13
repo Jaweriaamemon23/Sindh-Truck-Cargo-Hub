@@ -7,6 +7,7 @@ import 'package:sindh_truck_cargo_hub/screens/reports_screen.dart';
 import 'package:sindh_truck_cargo_hub/screens/login_screen.dart';
 import 'package:sindh_truck_cargo_hub/screens/admin_graphs_screen.dart'; // Ensure this import is added
 import '../providers/language_provider.dart';
+import 'package:sindh_truck_cargo_hub/screens/new_user_requests_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -18,9 +19,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   final List<Widget> _screens = [
     ReportsScreen(),
+    NewUserRequestsScreen(),
     AvailableUsersScreen(),
     FeedbackScreen(),
-    AdminGraphsScreen(), // Add this line for the new graph screen
+    AdminGraphsScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -89,6 +91,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
             label: isSindhi ? ' رپورٽ' : 'Reports',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_add),
+            label: isSindhi ? 'نئين درخواستون' : 'New Requests',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

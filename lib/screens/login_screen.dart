@@ -102,18 +102,6 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      await _saveEmailToRecent(user.email!);
-
-      if (isAdmin) {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => AdminDashboard()));
-        return;
-      }
-
-      await _firestore.collection('users').doc(user.email).update({
-        'emailVerified': true,
-      }).catchError((_) {});
-
       QuerySnapshot userQuery = await _firestore
           .collection('users')
           .where('email', isEqualTo: user.email!)
@@ -130,11 +118,57 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
+      DocumentSnapshot userDoc = userQuery.docs.first;
+
+      final userData = userDoc.data() as Map<String, dynamic>?;
+
+      if (userData == null) {
+        print("DEBUG: userData is null for document ID: ${userDoc.id}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(isSindhi
+                  ? 'صارف جو ڊيٽا ملي نه سگهيو.'
+                  : 'User data could not be loaded.')),
+        );
+        await _auth.signOut();
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      print("DEBUG: userData = $userData");
+
+      final verifiedField = userData['verified'];
+      print(
+          "DEBUG: verified field = $verifiedField, type = ${verifiedField.runtimeType}");
+
+      if (!isAdmin && (verifiedField != true)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(isSindhi
+                  ? 'توهان جو اڪائونٽ اڃا منظوري هيٺ آهي.'
+                  : 'Your account is pending admin approval.')),
+        );
+        await _auth.signOut();
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      await _saveEmailToRecent(user.email!);
+
+      if (isAdmin) {
+        Navigator.pushReplacement(
+            context, MaterialPageRoute(builder: (_) => AdminDashboard()));
+        return;
+      }
+
+      await _firestore.collection('users').doc(user.email).update({
+        'emailVerified': true,
+      }).catchError((_) {});
+
       await setupFirebaseMessaging();
 
-      DocumentSnapshot userDoc = userQuery.docs.first;
-      String userType = userDoc['userType'];
-      String phone = userDoc['phone'];
+      String userType = userData['userType'];
+      String phone = userData['phone'];
 
       await saveTokenWithUserInfo(phone: phone, userType: userType);
 
@@ -187,11 +221,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background and form
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.blue.shade50, Colors.blue.shade100, Colors.blue.shade200],
+                colors: [
+                  Colors.blue.shade50,
+                  Colors.blue.shade100,
+                  Colors.blue.shade200
+                ],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -204,7 +241,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        SizedBox(height: 60), // Leave space for the icon
+                        SizedBox(height: 60),
                         Text(
                           isSindhi ? "!ڀلي ڪري آيا" : "Welcome Back!",
                           textAlign: TextAlign.center,
@@ -226,7 +263,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         SizedBox(height: 30),
                         _isLoading
-                            ? Center(child: CircularProgressIndicator(color: Colors.blue.shade700))
+                            ? Center(
+                                child: CircularProgressIndicator(
+                                    color: Colors.blue.shade700))
                             : ElevatedButton(
                                 onPressed: _handleLogin,
                                 style: ElevatedButton.styleFrom(
@@ -259,10 +298,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ? "اکائونٽ ناهي؟ هتي رجسٽر ٿيو"
                                 : "Don't have an account? Register here",
                             style: TextStyle(
-                              color: Colors.blue.shade900,
-                              fontWeight: FontWeight.w600,
-                              decoration: TextDecoration.underline
-                            ),
+                                color: Colors.blue.shade900,
+                                fontWeight: FontWeight.w600,
+                                decoration: TextDecoration.underline),
                           ),
                         ),
                       ],
@@ -272,8 +310,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-
-          // Language icon at top right
           Positioned(
             top: 30,
             right: 16,
