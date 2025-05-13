@@ -103,8 +103,13 @@ class _TruckOwnerImageUploadState extends State<TruckOwnerImageUpload> {
             .update(userData);
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("✅ Registration completed successfully!")),
+          SnackBar(
+            content: Text(
+              Provider.of<LanguageProvider>(context, listen: false).isSindhi
+                  ? '✅ ڪاميابي سان رجسٽر ٿيو! مهرباني ڪري تصديق جو انتظار ڪريو. نوٽ: تصديق ۾ 24 ڪلاڪن تائين لڳي سگهن ٿا.'
+                  : '✅ Registered successfully! Wait for verification. Note: Verification may take up to 24 hours.',
+            ),
+          ),
         );
 
         Navigator.pushReplacement(

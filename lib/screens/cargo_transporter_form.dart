@@ -66,10 +66,11 @@ class _CargoTransporterFormState extends State<CargoTransporterForm> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  Provider.of<LanguageProvider>(context, listen: false).isSindhi
-                      ? 'ڪاميابي سان رجسٽر ٿيو! مهرباني ڪري لاگ ان ٿيو.'
-                      : 'Registered successfully! Please log in.')),
+              content: Text(Provider.of<LanguageProvider>(context,
+                          listen: false)
+                      .isSindhi
+                  ? 'ڪاميابي سان رجسٽر ٿيو! مهرباني ڪري تصديق جو انتظار ڪريو. نوٽ: تصديق ۾ 24 ڪلاڪن تائين لڳي سگهن ٿا.'
+                  : 'Registered successfully! Wait for verification. Note: Verification may take up to 24 hours.')),
         );
 
         Navigator.pushReplacement(
