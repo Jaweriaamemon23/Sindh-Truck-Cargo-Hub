@@ -48,7 +48,10 @@ class _AdminGraphsScreenState extends State<AdminGraphsScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: Text("Bookings Graphs"),
+        title: Text(
+          "Bookings Graphs",
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.blue,
       ),
       body: SingleChildScrollView(
