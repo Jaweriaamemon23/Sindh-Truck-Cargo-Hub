@@ -40,13 +40,12 @@ Future<void> markAsDelivered(String bookingId, BuildContext context) async {
       'deliveryDate': FieldValue.serverTimestamp(),
     });
 
-    // 2. Add to cargo_tracking collection using bookingId
     await FirebaseFirestore.instance
         .collection('cargo_tracking')
-        .doc(bookingId) // Use bookingId as the document ID
+        .doc(bookingId)
         .collection('progress')
         .add({
-      'booking_id': bookingId, // Store the bookingId
+      'booking_id': bookingId,
       'status': 'Delivered',
       'timestamp': DateTime.now().toString(),
       'delivered': true,
@@ -75,6 +74,8 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
 
   try {
     final bookingSnapshot = await bookingRef.get();
+    if (!bookingSnapshot.exists || bookingSnapshot.data()!['status'] != 'Pending') return;
+
     final bookingData = bookingSnapshot.data()!;
     final email = bookingData['email'];
 
@@ -84,6 +85,8 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
         .limit(1)
         .get();
 
+    if (userSnapshot.docs.isEmpty) return;
+
     final phone = userSnapshot.docs.first.data()['phone'] ?? '';
 
     await bookingRef.update({
@@ -91,13 +94,12 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
       'acceptedBy': currentUser!.email,
     });
 
-    // 1. Add to cargo_tracking collection using bookingId
     await FirebaseFirestore.instance
         .collection('cargo_tracking')
-        .doc(bookingId) // Use bookingId as the document ID
+        .doc(bookingId)
         .collection('progress')
         .add({
-      'booking_id': bookingId, // Store the bookingId
+      'booking_id': bookingId,
       'status': 'Accepted',
       'timestamp': DateTime.now().toString(),
     });
@@ -137,7 +139,6 @@ Future<void> rejectCargo(String bookingId, BuildContext context) async {
 
     final phone = userSnapshot.docs.first.data()['phone'] ?? '';
 
-    // 🚨 Only update rejectedBy, NOT status
     await bookingRef.update({
       'rejectedBy': FieldValue.arrayUnion([currentUser!.uid]),
     });

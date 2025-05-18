@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
 import 'cargo_tracking_screen.dart';
 import 'cargo_actions.dart';
 import '../providers/language_provider.dart';
-import 'package:provider/provider.dart';
 import '../services/location_service.dart';
+import 'dart:convert';
 
 class BookCargoScreen extends StatefulWidget {
   @override
@@ -14,6 +17,69 @@ class BookCargoScreen extends StatefulWidget {
 
 class _BookCargoScreenState extends State<BookCargoScreen> {
   String selectedFilter = 'All';
+  Set<String> awaitingConfirmation = {};
+  Map<String, String> localBookingStatuses = {};
+  Map<String, Timer> confirmationTimers = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalStatuses();
+  }
+
+  Future<void> _loadLocalStatuses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final statusKey = 'booking_statuses_${user.uid}';
+    final statusData = prefs.getString(statusKey);
+    if (statusData != null) {
+      setState(() {
+        localBookingStatuses =
+            Map<String, String>.from(Map<String, dynamic>.from(
+                jsonDecode(statusData) as Map<String, dynamic>));
+      });
+    }
+  }
+
+  Future<void> _saveLocalStatus(String bookingId, String status) async {
+    final prefs = await SharedPreferences.getInstance();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    localBookingStatuses[bookingId] = status;
+    final statusKey = 'booking_statuses_${user.uid}';
+    await prefs.setString(statusKey, jsonEncode(localBookingStatuses));
+
+    if (status == 'LocallyAccepted') {
+      setState(() {
+        awaitingConfirmation.add(bookingId);
+      });
+
+      confirmationTimers[bookingId]?.cancel();
+      confirmationTimers[bookingId] = Timer(Duration(seconds: 60), () {
+        setState(() {
+          awaitingConfirmation.remove(bookingId);
+          localBookingStatuses.remove(bookingId);
+          confirmationTimers.remove(bookingId);
+        });
+        _saveLocalStatus(bookingId, '');
+      });
+    } else {
+      setState(() {
+        awaitingConfirmation.remove(bookingId);
+        confirmationTimers[bookingId]?.cancel();
+        confirmationTimers.remove(bookingId);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    confirmationTimers.values.forEach((timer) => timer.cancel());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +132,8 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
           ),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('bookings')
-                  .snapshots(),
+              stream:
+                  FirebaseFirestore.instance.collection('bookings').snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(
@@ -115,8 +180,7 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                   itemCount: bookings.length,
                   itemBuilder: (context, index) {
                     var bookingDoc = bookings[index];
-                    var bookingData =
-                        bookingDoc.data() as Map<String, dynamic>;
+                    var bookingData = bookingDoc.data() as Map<String, dynamic>;
                     String bookingId = bookingDoc.id;
 
                     String status = bookingData['status'] ?? 'Pending';
@@ -127,7 +191,9 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                         acceptedBy != currentUser?.email;
                     String displayStatus = isAcceptedByAnother
                         ? (isSindhi ? "دستياب ناهي" : "Not Available")
-                        : status;
+                        : localBookingStatuses[bookingId] == 'LocallyAccepted'
+                            ? (isSindhi ? "قبول ڪيل (مقامي)" : "Accepted (Local)")
+                            : status;
 
                     return FutureBuilder<QuerySnapshot>(
                       future: FirebaseFirestore.instance
@@ -136,9 +202,8 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                           .limit(1)
                           .get(),
                       builder: (context, userSnapshot) {
-                        String requestedByPhone = isSindhi
-                            ? "لوڊ ٿي رهيو آهي..."
-                            : "Loading...";
+                        String requestedByPhone =
+                            isSindhi ? "لوڊ ٿي رهيو آهي..." : "Loading...";
 
                         if (userSnapshot.connectionState ==
                             ConnectionState.done) {
@@ -149,9 +214,8 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                             requestedByPhone =
                                 userData['phone'] ?? "Not Provided";
                           } else {
-                            requestedByPhone = isSindhi
-                                ? "يوزر نٿو ملي"
-                                : "User not found";
+                            requestedByPhone =
+                                isSindhi ? "يوزر نٿو ملي" : "User not found";
                           }
                         }
 
@@ -201,7 +265,8 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                   ),
                                 ),
                                 SizedBox(height: 10),
-                                if (status == 'Pending')
+                                if (status == 'Pending' &&
+                                    !awaitingConfirmation.contains(bookingId))
                                   Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceEvenly,
@@ -211,21 +276,27 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (ctx) => AlertDialog(
-                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              title: Text(isSindhi
+                                                  ? 'پڪ ڪريو'
+                                                  : 'Confirm'),
                                               content: Text(isSindhi
                                                   ? 'ڇا توهان واقعي هيءَ بوڪنگ قبول ڪرڻ چاهيو ٿا؟'
                                                   : 'Are you sure you want to accept this booking?'),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(ctx).pop(),
-                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(),
+                                                  child: Text(
+                                                      isSindhi ? 'نه' : 'No'),
                                                 ),
                                                 ElevatedButton(
                                                   onPressed: () {
                                                     Navigator.of(ctx).pop();
-                                                    acceptCargo(bookingId, context);
+                                                    _saveLocalStatus(bookingId,
+                                                        'LocallyAccepted');
                                                   },
-                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                  child: Text(
+                                                      isSindhi ? 'ها' : 'Yes'),
                                                 ),
                                               ],
                                             ),
@@ -235,8 +306,7 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                             color: Colors.white),
                                         label: Text(
                                           isSindhi ? "قبول ڪريو" : "Accept",
-                                          style:
-                                              TextStyle(color: Colors.white),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.green,
@@ -247,21 +317,27 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (ctx) => AlertDialog(
-                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              title: Text(isSindhi
+                                                  ? 'پڪ ڪريو'
+                                                  : 'Confirm'),
                                               content: Text(isSindhi
                                                   ? 'ڇا توهان واقعي هيءَ بوڪنگ رد ڪرڻ چاهيو ٿا؟'
                                                   : 'Are you sure you want to reject this booking?'),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(ctx).pop(),
-                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(),
+                                                  child: Text(
+                                                      isSindhi ? 'نه' : 'No'),
                                                 ),
                                                 ElevatedButton(
                                                   onPressed: () {
                                                     Navigator.of(ctx).pop();
-                                                    rejectCargo(bookingId, context);
+                                                    rejectCargo(
+                                                        bookingId, context);
                                                   },
-                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                  child: Text(
+                                                      isSindhi ? 'ها' : 'Yes'),
                                                 ),
                                               ],
                                             ),
@@ -271,11 +347,101 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                             color: Colors.white),
                                         label: Text(
                                           isSindhi ? "رد ڪريو" : "Reject",
-                                          style:
-                                              TextStyle(color: Colors.white),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (awaitingConfirmation.contains(bookingId))
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(isSindhi
+                                                  ? 'پڪ ڪريو'
+                                                  : 'Confirm'),
+                                              content: Text(isSindhi
+                                                  ? 'ڇا توهان واقعي هيءَ بوڪنگ جي تصديق ڪرڻ چاهيو ٿا؟'
+                                                  : 'Are you sure you want to confirm this booking?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(),
+                                                  child: Text(
+                                                      isSindhi ? 'نه' : 'No'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.of(ctx).pop();
+                                                    acceptCargo(
+                                                        bookingId, context);
+                                                    _saveLocalStatus(
+                                                        bookingId, 'Accepted');
+                                                  },
+                                                  child: Text(
+                                                      isSindhi ? 'ها' : 'Yes'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.check_circle,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi ? "تصديق" : "Confirm",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                        ),
+                                      ),
+                                      ElevatedButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (ctx) => AlertDialog(
+                                              title: Text(isSindhi
+                                                  ? 'پڪ ڪريو'
+                                                  : 'Confirm'),
+                                              content: Text(isSindhi
+                                                  ? 'ڇا توهان واقعي هيءَ بوڪنگ منسوخ ڪرڻ چاهيو ٿا؟'
+                                                  : 'Are you sure you want to cancel this booking?'),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(),
+                                                  child: Text(
+                                                      isSindhi ? 'نه' : 'No'),
+                                                ),
+                                                ElevatedButton(
+                                                  onPressed: () {
+                                                    Navigator.of(ctx).pop();
+                                                    _saveLocalStatus(
+                                                        bookingId, '');
+                                                  },
+                                                  child: Text(
+                                                      isSindhi ? 'ها' : 'Yes'),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: Icon(Icons.cancel,
+                                            color: Colors.white),
+                                        label: Text(
+                                          isSindhi ? "منسوخ" : "Cancel",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.grey,
                                         ),
                                       ),
                                     ],
@@ -291,21 +457,27 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                           showDialog(
                                             context: context,
                                             builder: (ctx) => AlertDialog(
-                                              title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                              title: Text(isSindhi
+                                                  ? 'پڪ ڪريو'
+                                                  : 'Confirm'),
                                               content: Text(isSindhi
                                                   ? 'ڇا توهان واقعي هن بوڪنگ کي پورو طور تي نشان لڳائڻ چاهيو ٿا؟'
                                                   : 'Are you sure you want to mark this booking as delivered?'),
                                               actions: [
                                                 TextButton(
-                                                  onPressed: () => Navigator.of(ctx).pop(),
-                                                  child: Text(isSindhi ? 'نه' : 'No'),
+                                                  onPressed: () =>
+                                                      Navigator.of(ctx).pop(),
+                                                  child: Text(
+                                                      isSindhi ? 'نه' : 'No'),
                                                 ),
                                                 ElevatedButton(
                                                   onPressed: () {
                                                     Navigator.of(ctx).pop();
-                                                    markAsDelivered(bookingId, context);
+                                                    markAsDelivered(
+                                                        bookingId, context);
                                                   },
-                                                  child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                  child: Text(
+                                                      isSindhi ? 'ها' : 'Yes'),
                                                 ),
                                               ],
                                             ),
@@ -317,8 +489,7 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                           isSindhi
                                               ? "پورو ٿي ويو"
                                               : "Mark as Delivered",
-                                          style:
-                                              TextStyle(color: Colors.white),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.blue,
@@ -339,8 +510,7 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                             color: Colors.white),
                                         label: Text(
                                           isSindhi ? "ٽريڪ ڪريو" : "Track",
-                                          style:
-                                              TextStyle(color: Colors.white),
+                                          style: TextStyle(color: Colors.white),
                                         ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.purple,
@@ -355,21 +525,27 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
                                         showDialog(
                                           context: context,
                                           builder: (ctx) => AlertDialog(
-                                            title: Text(isSindhi ? 'پڪ ڪريو' : 'Confirm'),
+                                            title: Text(isSindhi
+                                                ? 'پڪ ڪريو'
+                                                : 'Confirm'),
                                             content: Text(isSindhi
                                                 ? 'ڇا توهان واقعي هيءَ بوڪنگ لسٽ مان هٽائڻ چاهيو ٿا؟'
                                                 : 'Are you sure you want to remove this booking from the list?'),
                                             actions: [
                                               TextButton(
-                                                onPressed: () => Navigator.of(ctx).pop(),
-                                                child: Text(isSindhi ? 'نه' : 'No'),
+                                                onPressed: () =>
+                                                    Navigator.of(ctx).pop(),
+                                                child: Text(
+                                                    isSindhi ? 'نه' : 'No'),
                                               ),
                                               ElevatedButton(
                                                 onPressed: () {
                                                   Navigator.of(ctx).pop();
-                                                  removeBooking(bookingId, context);
+                                                  removeBooking(
+                                                      bookingId, context);
                                                 },
-                                                child: Text(isSindhi ? 'ها' : 'Yes'),
+                                                child: Text(
+                                                    isSindhi ? 'ها' : 'Yes'),
                                               ),
                                             ],
                                           ),
@@ -438,7 +614,10 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
     if (user == null) return;
 
     try {
-      await FirebaseFirestore.instance.collection('bookings').doc(bookingId).update({
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(bookingId)
+          .update({
         'removedBy': FieldValue.arrayUnion([user.uid]),
       });
 
@@ -453,6 +632,7 @@ class _BookCargoScreenState extends State<BookCargoScreen> {
   }
 
   Color getStatusColor(String status) {
+    if (status.contains('Accepted (Local)')) return Colors.green.shade300;
     switch (status.toLowerCase()) {
       case 'pending':
         return Colors.orange;
