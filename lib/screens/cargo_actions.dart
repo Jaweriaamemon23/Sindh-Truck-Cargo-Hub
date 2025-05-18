@@ -57,8 +57,9 @@ Future<void> markAsDelivered(String bookingId, BuildContext context) async {
       title: isSindhi
           ? "توهان جو ڪارجو ترسيل ٿي ويو آهي!"
           : "Your cargo has been delivered!",
-      body:
-          "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been delivered by the truck owner.",
+      body: isSindhi
+          ? "${bookingData['cargoType']} ${bookingData['startCity']} کان ${bookingData['endCity']} تائين ترسيل ٿي وئي آهي."
+          : "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been delivered by the truck owner.",
     );
   } catch (e) {
     print("❌ Error: $e");
@@ -74,7 +75,8 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
 
   try {
     final bookingSnapshot = await bookingRef.get();
-    if (!bookingSnapshot.exists || bookingSnapshot.data()!['status'] != 'Pending') return;
+    if (!bookingSnapshot.exists ||
+        bookingSnapshot.data()!['status'] != 'Pending') return;
 
     final bookingData = bookingSnapshot.data()!;
     final email = bookingData['email'];
@@ -110,8 +112,10 @@ Future<void> acceptCargo(String bookingId, BuildContext context) async {
       title: isSindhi
           ? "توهان جو ڪارجو قبول ٿي ويو آهي!"
           : "Your cargo has been accepted!",
-      body:
-          "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been accepted by a truck owner.",
+      body: isSindhi
+          ? "${bookingData['cargoType']} ${bookingData['startCity']} کان ${bookingData['endCity']} تائين قبول ڪيو ويو آهي. هاڻ توهان پنهنجي ڪارجو کي Booking ID: $bookingId ذريعي ٽريڪ ڪري سگهو ٿا."
+          : "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been accepted by a truck owner. You can now track your cargo using Booking ID: $bookingId.",
+      bookingId: bookingId,
     );
   } catch (e) {
     print("❌ Error: $e");
@@ -149,8 +153,9 @@ Future<void> rejectCargo(String bookingId, BuildContext context) async {
       title: isSindhi
           ? "توهان جو ڪارجو رد ٿي ويو آهي!"
           : "Your cargo has been rejected!",
-      body:
-          "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been rejected by a truck owner.",
+      body: isSindhi
+          ? "${bookingData['cargoType']} ${bookingData['startCity']} کان ${bookingData['endCity']} تائين رد ڪئي وئي آهي."
+          : "${bookingData['cargoType']} from ${bookingData['startCity']} to ${bookingData['endCity']} has been rejected by a truck owner.",
     );
   } catch (e) {
     print("❌ Error: $e");
@@ -162,6 +167,7 @@ Future<void> sendNotificationToCargoOwner({
   required String phone,
   required String title,
   required String body,
+  String? bookingId, // now optional
 }) async {
   try {
     final accessToken = await getAccessToken();
@@ -176,6 +182,19 @@ Future<void> sendNotificationToCargoOwner({
       final token = doc.data()['fcmToken'];
       if (token == null || token.isEmpty) continue;
 
+      final message = {
+        "token": token,
+        "notification": {"title": title, "body": body},
+        "data": {
+          "type": "cargo_response",
+          "action": "update",
+        },
+      };
+
+      if (bookingId != null) {
+        message["data"]!["bookingId"] = bookingId;
+      }
+
       final response = await http.post(
         Uri.parse(
             "https://fcm.googleapis.com/v1/projects/sindhtruckcargohub/messages:send"),
@@ -183,13 +202,7 @@ Future<void> sendNotificationToCargoOwner({
           "Content-Type": "application/json",
           "Authorization": "Bearer $accessToken",
         },
-        body: jsonEncode({
-          "message": {
-            "token": token,
-            "notification": {"title": title, "body": body},
-            "data": {"type": "cargo_response", "action": "update"},
-          },
-        }),
+        body: jsonEncode({"message": message}),
       );
 
       if (response.statusCode != 200) {

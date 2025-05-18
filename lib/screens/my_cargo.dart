@@ -25,7 +25,8 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
         .snapshots();
   }
 
-  void _showTruckOwnerDetails(String status, String acceptedBy) {
+  void _showTruckOwnerDetails(
+      String status, String acceptedBy, String trackingId) {
     final isSindhi = context.read<LanguageProvider>().isSindhi;
 
     showDialog(
@@ -37,6 +38,15 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (status == 'Accepted') ...[
+                Text(
+                  isSindhi ? 'ٽريڪنگ ID:' : 'Tracking ID:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 4),
+                SelectableText(trackingId),
+                SizedBox(height: 12),
+              ],
               Text(
                 isSindhi
                     ? (status == 'Delivered' ? 'پهچايو ويو :' : 'منظور ڪندڙ :')
@@ -265,8 +275,10 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                               trailing: acceptedBy != null
                                   ? InkWell(
                                       onTap: () {
+                                        String trackingId = cargoList[index]
+                                            .id; // document ID is trackingId
                                         _showTruckOwnerDetails(
-                                            status, acceptedBy);
+                                            status, acceptedBy!, trackingId);
                                       },
                                       child: Container(
                                         width: 120,

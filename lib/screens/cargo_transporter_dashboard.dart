@@ -10,6 +10,9 @@ import 'my_cargo.dart';
 import 'cargo_tracking_screen.dart';
 import 'login_screen.dart';
 
+// ✅ NEW: Import your MyBookingTrackingScreen
+import 'my_booking_tracking_screen.dart'; // <-- You must create this screen
+
 class CargoTransporterDashboard extends StatefulWidget {
   @override
   _CargoTransporterDashboardState createState() =>
@@ -31,6 +34,7 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
       MyCargoScreen(),
       AvailableTrucksScreen(),
       CargoTrackingScreen(),
+      MyBookingTrackingScreen(), // ✅ NEW screen added here
     ];
     fetchUserBookings();
   }
@@ -106,8 +110,10 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed, // ✅ important
+        backgroundColor:
+            Colors.blue.shade800, // ✅ ensures blue color is applied
         selectedItemColor: Colors.white,
-        backgroundColor: Colors.blue.shade800,
         unselectedItemColor: Colors.white60,
         items: [
           BottomNavigationBarItem(
@@ -121,6 +127,10 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.location_on),
             label: isSindhi ? 'ڪارگو ٽريڪنگ' : 'Cargo Tracking',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.search),
+            label: isSindhi ? 'ٽريڪنگ ID سان' : 'Track by ID',
           ),
         ],
       ),
