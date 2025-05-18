@@ -142,7 +142,9 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
               String startCity = item['startCity'] ?? 'Unknown';
               String endCity = item['endCity'] ?? 'Unknown';
               String acceptedBy = item['acceptedBy'] ?? 'Not Accepted';
-              String bookingId = item['bookingId'] ?? '';
+              String bookingId = item['bookingId'] ?? ''; // Document ID
+              String cargoType =
+                  item['cargoType'] ?? 'Unknown'; // Fetch cargoType
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,11 +155,24 @@ class _BusinessOwnerDashboardState extends State<BusinessOwnerDashboard> {
                         "$startCity → $endCity",
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      subtitle: Text(
-                        "${isSindhi ? "قبول ڪندڙ" : "Accepted By"}: $acceptedBy",
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${isSindhi ? "قسم ڪارگو" : "Cargo Type"}: $cargoType",
+                          ),
+                          Text(
+                            "${isSindhi ? "قبول ڪندڙ" : "Accepted By"}: $acceptedBy",
+                          ),
+                          if (acceptedBy != 'Not Accepted' &&
+                              bookingId.isNotEmpty)
+                            Text(
+                              "${isSindhi ? "ٽريڪنگ ID" : "Tracking ID"}: $bookingId",
+                              style: TextStyle(fontWeight: FontWeight.w500),
+                            ),
+                        ],
                       ),
                       onTap: () {
-                        // Navigate to TrackingDetailsPage on tap
                         Navigator.push(
                           context,
                           MaterialPageRoute(

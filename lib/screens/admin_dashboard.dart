@@ -9,6 +9,7 @@ import '../providers/language_provider.dart';
 import 'login_screen.dart';
 import 'available_user.dart';
 import 'feedback.dart';
+import 'new_user_requests_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   @override
@@ -168,7 +169,9 @@ class _AdminDashboardState extends State<AdminDashboard>
           style: TextStyle(color: Colors.white),
         ),
         actions: [
-          IconButton(icon: Icon(Icons.logout, color: Colors.white), onPressed: _logout),
+          IconButton(
+              icon: Icon(Icons.logout, color: Colors.white),
+              onPressed: _logout),
           IconButton(
               icon: Icon(Icons.language, color: Colors.white),
               onPressed: () {
@@ -442,7 +445,7 @@ class _AdminDashboardState extends State<AdminDashboard>
                   style: TextStyle(color: Colors.white, fontSize: 20),
                 ),
                 Text(
-                  'sindhtruckcargohub@gmail.com', // ✅ Updated email
+                  'sindhtruckcargohub@gmail.com',
                   style: TextStyle(color: Colors.white70),
                 ),
               ],
@@ -453,6 +456,13 @@ class _AdminDashboardState extends State<AdminDashboard>
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
+            ),
+          ),
+          ListTile(
+            title: Text(isSindhi ? 'نئين درخواستون' : 'New Requests'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => NewUserRequestsScreen()),
             ),
           ),
           ListTile(
@@ -467,14 +477,14 @@ class _AdminDashboardState extends State<AdminDashboard>
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => ReportsScreen()),
-            ), // Already on dashboard
+            ),
           ),
           ListTile(
             title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Graph'),
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
-            ), // Already on dashboard
+            ),
           ),
         ],
       ),
