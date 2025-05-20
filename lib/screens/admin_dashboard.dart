@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:sindh_truck_cargo_hub/screens/admin_graphs_screen.dart';
 import 'package:sindh_truck_cargo_hub/screens/reports_screen.dart';
+import 'package:sindh_truck_cargo_hub/screens/tracking_feature_admin.dart';
 import '../providers/language_provider.dart';
 import 'login_screen.dart';
 import 'available_user.dart';
@@ -484,6 +485,13 @@ class _AdminDashboardState extends State<AdminDashboard>
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
+            ),
+          ),
+          ListTile(
+            title: Text(isSindhi ? 'ٽريڪنگ' : 'Tracking'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => TrackingScreen()),
             ),
           ),
         ],
