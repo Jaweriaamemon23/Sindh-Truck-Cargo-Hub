@@ -157,6 +157,33 @@ class _AdminDashboardState extends State<AdminDashboard>
     super.dispose();
   }
 
+  void _onCardTapped(String title) {
+    String? statusFilter;
+    switch (title) {
+      case 'Accepted Booking':
+        statusFilter = 'Accepted';
+        break;
+      case 'Delivered':
+        statusFilter = 'Delivered';
+        break;
+      case 'Total Users':
+        // No status filter for users
+        statusFilter = null;
+        break;
+      case 'Total Bookings':
+        statusFilter = null;
+        break;
+      default:
+        statusFilter = null;
+    }
+
+    setState(() {
+      _selectedMetric = title;
+      _selectedStatus = statusFilter ?? 'All';
+      _fetchAllData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final isSindhi = Provider.of<LanguageProvider>(context).isSindhi;
@@ -172,12 +199,6 @@ class _AdminDashboardState extends State<AdminDashboard>
           IconButton(
               icon: Icon(Icons.logout, color: Colors.white),
               onPressed: _logout),
-          IconButton(
-              icon: Icon(Icons.language, color: Colors.white),
-              onPressed: () {
-                Provider.of<LanguageProvider>(context, listen: false)
-                    .toggleLanguage();
-              }),
         ],
       ),
       drawer: _buildDrawer(isSindhi),
@@ -283,7 +304,7 @@ class _AdminDashboardState extends State<AdminDashboard>
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              interval: 2, // ✅ Adjust based on your data
+              interval: 2,
               getTitlesWidget: (value, meta) {
                 return Text(value.toInt().toString());
               },
@@ -320,10 +341,10 @@ class _AdminDashboardState extends State<AdminDashboard>
             ),
           ),
           topTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false), // 👈 HIDE TOP AXIS
+            sideTitles: SideTitles(showTitles: false),
           ),
           rightTitles: AxisTitles(
-            sideTitles: SideTitles(showTitles: false), // 👈 HIDE RIGHT AXIS
+            sideTitles: SideTitles(showTitles: false),
           ),
         ),
         minX: 0,
@@ -339,63 +360,91 @@ class _AdminDashboardState extends State<AdminDashboard>
             color: color,
             barWidth: 3,
             belowBarData: BarAreaData(show: false),
+            dotData: FlDotData(
+              show: true,
+              getDotPainter: (spot, percent, barData, index) {
+                return FlDotCirclePainter(
+                  radius: 6,
+                  color: color,
+                  strokeWidth: 2,
+                  strokeColor: Colors.white,
+                );
+              },
+            ),
+            showingIndicators: List.generate(spots.length, (index) => index),
           )
         ],
+        lineTouchData: LineTouchData(
+          enabled: true,
+          touchTooltipData: LineTouchTooltipData(
+            tooltipBgColor: Colors.blueAccent,
+            getTooltipItems: (touchedSpots) {
+              return touchedSpots.map((spot) {
+                return LineTooltipItem(
+                  '${spot.y.toInt()}',
+                  const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.bold),
+                );
+              }).toList();
+            },
+          ),
+        ),
       ),
     );
   }
 
   Color _getLineColor() {
     switch (_selectedStatus) {
-      case 'Completed':
+      case 'Accepted':
+        return Colors.deepOrange;
+      case 'Delivered':
         return Colors.green;
       case 'Unconfirmed':
+        return Colors.yellow;
+      case 'Rejected':
         return Colors.red;
-      case 'Confirmed':
-        return Colors.orange;
       default:
         return Colors.blue;
     }
   }
 
   Widget _buildDashboardCard(
-      IconData icon, String title, String value, Color baseColor) {
-    return GestureDetector(
+      IconData icon, String title, String count, Color color) {
+    return InkWell(
       onTap: () {
-        setState(() {
-          _selectedMetric = title;
-        });
+        _onCardTapped(title);
       },
       child: Container(
-        width: (MediaQuery.of(context).size.width / 2) - 24,
-        margin: EdgeInsets.only(bottom: 16),
+        width: 160,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: baseColor.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(16),
-          border: _selectedMetric == title
-              ? Border.all(color: baseColor, width: 2)
-              : null,
+          color: color.withOpacity(0.85),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6),
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            )
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: baseColor.withOpacity(0.85), size: 30),
-            SizedBox(height: 8),
+            Icon(icon, size: 48, color: Colors.white),
+            SizedBox(height: 12),
             Text(
               title,
-              style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                  color: baseColor.withOpacity(0.85)),
+              style:
+                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
+            SizedBox(height: 6),
             Text(
-              value,
+              count,
               style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold, color: baseColor),
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -403,87 +452,129 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
-  Widget _buildDropdown(String label, List<String> items, String value,
+  Widget _buildDropdown(String label, List<String> items, String selected,
       Function(String) onChanged) {
-    return DropdownButton<String>(
-      value: value,
-      isExpanded: true,
-      onChanged: (val) => onChanged(val!),
-      items: items.map((e) {
-        return DropdownMenuItem<String>(
-          value: e,
-          child: Text(e),
-        );
-      }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        DropdownButton<String>(
+          value: selected,
+          isExpanded: true,
+          onChanged: (val) {
+            if (val != null) {
+              onChanged(val);
+            }
+          },
+          items: items
+              .map((e) => DropdownMenuItem(
+                    child: Text(e),
+                    value: e,
+                  ))
+              .toList(),
+        ),
+      ],
     );
   }
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
     Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-    );
+        context, MaterialPageRoute(builder: (_) => LoginScreen()));
   }
 
   Widget _buildDrawer(bool isSindhi) {
     return Drawer(
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: Column(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue.shade900, // Darker shade of blue
-            ),
+            decoration: BoxDecoration(color: Colors.blue.shade800),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
-                SizedBox(height: 10),
                 Text(
-                  'Admin',
-                  style: TextStyle(color: Colors.white, fontSize: 20),
+                  isSindhi ? 'ايڊمن' : 'Sindh Truck Cargo Hub',
+                  style: TextStyle(color: Colors.white, fontSize: 24),
                 ),
+                SizedBox(height: 8),
                 Text(
                   'sindhtruckcargohub@gmail.com',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: Colors.white70, fontSize: 14),
                 ),
               ],
             ),
           ),
-          ListTile(
-            title: Text(isSindhi ? 'استعمال ڪندڙ' : 'Users'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                ListTile(
+                  leading: Icon(Icons.person),
+                  title: Text(
+                      isSindhi ? 'نئون درخواست ڪندڙ' : 'New User Requests'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => NewUserRequestsScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.local_shipping),
+                  title: Text(isSindhi ? 'موجوده صارفين' : 'Available Users'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.feedback),
+                  title: Text(isSindhi ? 'راءِ' : 'Complain'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => FeedbackScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.bar_chart),
+                  title: Text(isSindhi ? 'رپورٽون' : 'Reports'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => ReportsScreen()),
+                    );
+                  },
+                ),
+                ListTile(
+                  leading: Icon(Icons.bar_chart),
+                  title: Text(isSindhi ? 'garph' : 'graph'),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
-          ListTile(
-            title: Text(isSindhi ? 'نئين درخواستون' : 'New Requests'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => NewUserRequestsScreen()),
-            ),
-          ),
-          ListTile(
-            title: Text(isSindhi ? 'جائزن' : 'Complain'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => FeedbackScreen()),
-            ),
-          ),
-          ListTile(
-            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Report'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ReportsScreen()),
-            ),
-          ),
-          ListTile(
-            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Graph'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
+          // Footer at bottom
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: Text(
+              '© ${DateTime.now().year} SindhTruck',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 12,
+              ),
+              textAlign: TextAlign.center,
             ),
           ),
         ],
