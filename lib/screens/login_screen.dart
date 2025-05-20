@@ -213,6 +213,60 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = false);
   }
 
+  Future<void> _resetPassword(String email) async {
+    final isSindhi =
+        Provider.of<LanguageProvider>(context, listen: false).isSindhi;
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isSindhi
+              ? 'مهرباني ڪري پنهنجو اي ميل داخل ڪريو'
+              : 'Please enter your email address'),
+        ),
+      );
+      return;
+    }
+
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isSindhi
+              ? 'پاسورڊ ري سيٽ لنڪ توهان جي اي ميل تي موڪليو ويو آهي'
+              : 'Password reset link has been sent to your email'),
+        ),
+      );
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = isSindhi
+              ? 'هن اي ميل سان ڪوبه اڪائونٽ نه مليو'
+              : 'No account found with this email';
+          break;
+        case 'invalid-email':
+          errorMessage =
+              isSindhi ? 'غلط اي ميل فارميٽ' : 'Invalid email format';
+          break;
+        default:
+          errorMessage = isSindhi
+              ? 'پاسورڊ ري سيٽ ناڪام: ${e.message}'
+              : 'Password reset failed: ${e.message}';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              isSindhi ? 'اوچتو نقص پيش آيو' : 'An unexpected error occurred'),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final langProvider = Provider.of<LanguageProvider>(context);
@@ -260,6 +314,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           Icons.lock,
                           TextInputType.text,
                           obscureText: true,
+                        ),
+                        SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () {
+                              _resetPassword(_emailController.text);
+                            },
+                            child: Text(
+                              isSindhi
+                                  ? "پاسورڊ وساري ويٺو آهيو؟"
+                                  : "Forgot Password?",
+                              style: TextStyle(
+                                color: Colors.blue.shade700,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
                         ),
                         SizedBox(height: 30),
                         _isLoading
