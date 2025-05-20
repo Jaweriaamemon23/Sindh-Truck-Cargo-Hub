@@ -487,95 +487,62 @@ class _AdminDashboardState extends State<AdminDashboard>
 
   Widget _buildDrawer(bool isSindhi) {
     return Drawer(
-      child: Column(
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue.shade800),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade900, // Darker shade of blue
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
+                SizedBox(height: 10),
                 Text(
-                  isSindhi ? 'ايڊمن' : 'Sindh Truck Cargo Hub',
-                  style: TextStyle(color: Colors.white, fontSize: 24),
+                  'Admin',
+                  style: TextStyle(color: Colors.white, fontSize: 20),
                 ),
-                SizedBox(height: 8),
                 Text(
                   'sindhtruckcargohub@gmail.com',
-                  style: TextStyle(color: Colors.white70, fontSize: 14),
+                  style: TextStyle(color: Colors.white70),
                 ),
               ],
             ),
           ),
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                ListTile(
-                  leading: Icon(Icons.person),
-                  title: Text(
-                      isSindhi ? 'نئون درخواست ڪندڙ' : 'New User Requests'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => NewUserRequestsScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.local_shipping),
-                  title: Text(isSindhi ? 'موجوده صارفين' : 'Available Users'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.feedback),
-                  title: Text(isSindhi ? 'راءِ' : 'Complain'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => FeedbackScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.bar_chart),
-                  title: Text(isSindhi ? 'رپورٽون' : 'Reports'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => ReportsScreen()),
-                    );
-                  },
-                ),
-                ListTile(
-                  leading: Icon(Icons.bar_chart),
-                  title: Text(isSindhi ? 'garph' : 'graph'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
-                    );
-                  },
-                ),
-              ],
+          ListTile(
+            title: Text(isSindhi ? 'استعمال ڪندڙ' : 'Users'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
             ),
           ),
-          // Footer at bottom
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: Text(
-              '© ${DateTime.now().year} SindhTruck',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 12,
-              ),
-              textAlign: TextAlign.center,
+          ListTile(
+            title: Text(isSindhi ? 'نئين درخواستون' : 'New Requests'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => NewUserRequestsScreen()),
+            ),
+          ),
+          ListTile(
+            title: Text(isSindhi ? 'جائزن' : 'Complain'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => FeedbackScreen()),
+            ),
+          ),
+          ListTile(
+            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Report'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ReportsScreen()),
+            ),
+          ),
+          ListTile(
+            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Graph'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
             ),
           ),
           ListTile(
