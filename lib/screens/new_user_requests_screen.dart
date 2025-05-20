@@ -14,7 +14,8 @@ class NewUserRequestsScreen extends StatelessWidget {
     await FirebaseFirestore.instance.collection('users').doc(userId).delete();
   }
 
-  void showUserInfoDialog(BuildContext context, Map<String, dynamic> userData, String userId) {
+  void showUserInfoDialog(
+      BuildContext context, Map<String, dynamic> userData, String userId) {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
