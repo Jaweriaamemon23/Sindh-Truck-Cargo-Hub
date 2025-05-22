@@ -196,12 +196,37 @@ class _LoginScreenState extends State<LoginScreen> {
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => dashboard));
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text(isSindhi
-                ? "لاگ ان ناڪام: ${e.message}"
-                : "Login failed: ${e.message}")),
-      );
+      // This helps you see the error in console for debugging
+      print("FirebaseAuthException code: ${e.code}");
+
+      final isSindhi =
+          Provider.of<LanguageProvider>(context, listen: false).isSindhi;
+
+      String message;
+      switch (e.code) {
+        case 'wrong-password':
+          message = isSindhi
+              ? "غلط پاسورڊ. جيڪڏهن توهان پاسورڊ وساري ويٺا آهيو، مھرباني ڪري 'پاسورڊ وساري ويٺو آهيو؟' تي ڪلڪ ڪريو."
+              : "Incorrect password. If you've forgotten it, click on 'Forgot Password?'.";
+          break;
+        case 'user-not-found':
+          message =
+              isSindhi ? "صارف موجود ناهي." : "No user found with this email.";
+          break;
+        case 'invalid-email':
+          message = isSindhi ? "غلط اي ميل فارمٽ." : "Invalid email format.";
+          break;
+        default:
+          message = isSindhi
+              ? "لاگ ان ناڪام: ${e.message}"
+              : "Login failed: ${e.message}";
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -271,7 +296,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final langProvider = Provider.of<LanguageProvider>(context);
     final isSindhi = langProvider.isSindhi;
-
     return Scaffold(
       body: Stack(
         children: [
@@ -315,25 +339,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextInputType.text,
                           obscureText: true,
                         ),
-                        SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              _resetPassword(_emailController.text);
-                            },
-                            child: Text(
-                              isSindhi
-                                  ? "پاسورڊ وساري ويٺو آهيو؟"
-                                  : "Forgot Password?",
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontWeight: FontWeight.w500,
-                                decoration: TextDecoration.underline,
-                              ),
-                            ),
-                          ),
-                        ),
                         SizedBox(height: 30),
                         _isLoading
                             ? Center(
@@ -356,6 +361,24 @@ class _LoginScreenState extends State<LoginScreen> {
                                   style: TextStyle(fontSize: 18),
                                 ),
                               ),
+                        SizedBox(height: 10),
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              _resetPassword(_emailController.text);
+                            },
+                            child: Text(
+                              isSindhi
+                                  ? "پاسورڊ وساري ويٺو آهيو؟"
+                                  : "Forgot Password?",
+                              style: TextStyle(
+                                color: Colors.blue.shade900,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ),
                         SizedBox(height: 20),
                         TextButton(
                           onPressed: () {

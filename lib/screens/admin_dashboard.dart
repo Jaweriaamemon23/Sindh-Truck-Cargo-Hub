@@ -168,7 +168,6 @@ class _AdminDashboardState extends State<AdminDashboard>
         statusFilter = 'Delivered';
         break;
       case 'Total Users':
-        // No status filter for users
         statusFilter = null;
         break;
       case 'Total Bookings':
@@ -192,6 +191,8 @@ class _AdminDashboardState extends State<AdminDashboard>
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.blue.shade800,
+        iconTheme:
+            IconThemeData(color: Colors.white), // <-- drawer icon white here
         title: Text(
           isSindhi ? 'ايڊمن ڊيش بورڊ' : 'Admin Dashboard',
           style: TextStyle(color: Colors.white),
@@ -208,19 +209,31 @@ class _AdminDashboardState extends State<AdminDashboard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: [
-                _buildDashboardCard(Icons.person, 'Total Users',
-                    totalUsers.toString(), Colors.teal),
-                _buildDashboardCard(Icons.local_shipping, 'Accepted Booking',
-                    totalTrucks.toString(), Colors.deepOrange),
-                _buildDashboardCard(Icons.book_online, 'Total Bookings',
-                    totalBookings.toString(), Colors.indigo),
-                _buildDashboardCard(Icons.check, 'Delivered',
-                    completedBookings.toString(), Colors.green),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                double maxWidth = constraints.maxWidth;
+                // Calculate width for 2 cards per row with 16px spacing
+                double cardWidth = (maxWidth - 16) / 2;
+
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    _buildDashboardCard(Icons.person, 'Total Users',
+                        totalUsers.toString(), Colors.teal, cardWidth),
+                    _buildDashboardCard(
+                        Icons.local_shipping,
+                        'Accepted Booking',
+                        totalTrucks.toString(),
+                        Colors.deepOrange,
+                        cardWidth),
+                    _buildDashboardCard(Icons.book_online, 'Total Bookings',
+                        totalBookings.toString(), Colors.indigo, cardWidth),
+                    _buildDashboardCard(Icons.check, 'Delivered',
+                        completedBookings.toString(), Colors.green, cardWidth),
+                  ],
+                );
+              },
             ),
             SizedBox(height: 20),
             Row(
@@ -348,75 +361,43 @@ class _AdminDashboardState extends State<AdminDashboard>
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
-        minX: 0,
-        maxX: spots.length.toDouble() - 1,
-        minY: 0,
-        maxY: spots.isEmpty
-            ? 10
-            : spots.map((e) => e.y).reduce((a, b) => a > b ? a : b) + 5,
+        borderData: FlBorderData(show: true),
         lineBarsData: [
           LineChartBarData(
             spots: spots,
             isCurved: true,
             color: color,
             barWidth: 3,
-            belowBarData: BarAreaData(show: false),
-            dotData: FlDotData(
-              show: true,
-              getDotPainter: (spot, percent, barData, index) {
-                return FlDotCirclePainter(
-                  radius: 6,
-                  color: color,
-                  strokeWidth: 2,
-                  strokeColor: Colors.white,
-                );
-              },
-            ),
-            showingIndicators: List.generate(spots.length, (index) => index),
-          )
-        ],
-        lineTouchData: LineTouchData(
-          enabled: true,
-          touchTooltipData: LineTouchTooltipData(
-            tooltipBgColor: Colors.blueAccent,
-            getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((spot) {
-                return LineTooltipItem(
-                  '${spot.y.toInt()}',
-                  const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold),
-                );
-              }).toList();
-            },
+            dotData: FlDotData(show: true),
           ),
-        ),
+        ],
       ),
     );
   }
 
   Color _getLineColor() {
     switch (_selectedStatus) {
-      case 'Accepted':
-        return Colors.deepOrange;
       case 'Delivered':
         return Colors.green;
+      case 'Accepted':
+        return Colors.deepOrange;
       case 'Unconfirmed':
-        return Colors.yellow;
-      case 'Rejected':
         return Colors.red;
+      case 'Rejected':
+        return Colors.grey;
       default:
         return Colors.blue;
     }
   }
 
   Widget _buildDashboardCard(
-      IconData icon, String title, String count, Color color) {
+      IconData icon, String title, String count, Color color, double width) {
     return InkWell(
       onTap: () {
         _onCardTapped(title);
       },
       child: Container(
-        width: 160,
+        width: width,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: color.withOpacity(0.85),
@@ -453,107 +434,80 @@ class _AdminDashboardState extends State<AdminDashboard>
     );
   }
 
-  Widget _buildDropdown(String label, List<String> items, String selected,
-      Function(String) onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        DropdownButton<String>(
-          value: selected,
-          isExpanded: true,
-          onChanged: (val) {
-            if (val != null) {
-              onChanged(val);
-            }
-          },
-          items: items
-              .map((e) => DropdownMenuItem(
-                    child: Text(e),
-                    value: e,
-                  ))
-              .toList(),
-        ),
-      ],
+  Widget _buildDropdown(String label, List<String> items, String selectedValue,
+      ValueChanged<String> onChanged) {
+    return DropdownButtonFormField<String>(
+      decoration: InputDecoration(labelText: label),
+      value: selectedValue,
+      items: items
+          .map((val) => DropdownMenuItem(value: val, child: Text(val)))
+          .toList(),
+      onChanged: (val) {
+        if (val != null) onChanged(val);
+      },
     );
   }
 
-  void _logout() async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => LoginScreen()));
-  }
-
-  Widget _buildDrawer(bool isSindhi) {
+  Drawer _buildDrawer(bool isSindhi) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(
-              color: Colors.blue.shade900, // Darker shade of blue
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.admin_panel_settings, size: 40, color: Colors.white),
-                SizedBox(height: 10),
-                Text(
-                  'Admin',
-                  style: TextStyle(color: Colors.white, fontSize: 20),
-                ),
-                Text(
-                  'sindhtruckcargohub@gmail.com',
-                  style: TextStyle(color: Colors.white70),
-                ),
-              ],
+            decoration: BoxDecoration(color: Colors.blue.shade800),
+            child: Text(
+              isSindhi ? 'مينيو' : 'Menu',
+              style: TextStyle(color: Colors.white, fontSize: 24),
             ),
           ),
           ListTile(
-            title: Text(isSindhi ? 'استعمال ڪندڙ' : 'Users'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AvailableUsersScreen()),
-            ),
+            leading: Icon(Icons.people),
+            title: Text(isSindhi ? 'نئون صارف درخواستون' : 'New User Requests'),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => NewUserRequestsScreen()));
+            },
           ),
           ListTile(
-            title: Text(isSindhi ? 'نئين درخواستون' : 'New Requests'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => NewUserRequestsScreen()),
-            ),
+            leading: Icon(Icons.feedback),
+            title: Text(isSindhi ? 'رايو' : 'Feedback'),
+            onTap: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => FeedbackScreen()));
+            },
           ),
           ListTile(
-            title: Text(isSindhi ? 'جائزن' : 'Complain'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => FeedbackScreen()),
-            ),
+            leading: Icon(Icons.analytics),
+            title: Text(isSindhi ? 'گرافس' : 'Graphs'),
+            onTap: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => AdminGraphsScreen()));
+            },
           ),
           ListTile(
-            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Report'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => ReportsScreen()),
-            ),
-          ),
-          ListTile(
-            title: Text(isSindhi ? 'گراف ۽ رپورٽ' : 'Graph'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AdminGraphsScreen()),
-            ),
-          ),
-          ListTile(
+            leading: Icon(Icons.directions_car),
             title: Text(isSindhi ? 'ٽريڪنگ' : 'Tracking'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => TrackingScreen()),
-            ),
+            onTap: () {
+              Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => TrackingScreen()));
+            },
+          ),
+          ListTile(
+            leading: Icon(Icons.person_search),
+            title: Text(isSindhi ? 'موجود صارف' : 'Available Users'),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => AvailableUsersScreen()));
+            },
           ),
         ],
       ),
     );
+  }
+
+  void _logout() async {
+    await FirebaseAuth.instance.signOut();
+    Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => LoginScreen()));
   }
 }

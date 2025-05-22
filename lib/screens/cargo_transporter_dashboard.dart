@@ -106,7 +106,21 @@ class _CargoTransporterDashboardState extends State<CargoTransporterDashboard> {
           ),
         ],
       ),
-      body: _screens[_selectedIndex],
+      body: Column(
+        children: [
+          if (_selectedIndex == 3)
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.blue.shade800,
+              child: Text(
+                isSindhi ? 'ID سان روانگي ڳوليو' : 'Track Shipment by ID',
+                style: TextStyle(fontSize: 20, color: Colors.white),
+              ),
+            ),
+          Expanded(child: _screens[_selectedIndex]),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,

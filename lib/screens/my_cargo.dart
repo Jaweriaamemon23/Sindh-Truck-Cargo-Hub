@@ -13,7 +13,7 @@ class MyCargoScreen extends StatefulWidget {
 class _MyCargoScreenState extends State<MyCargoScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final CargoReviewSystem _reviewSystem = CargoReviewSystem();
-  String _selectedFilter = 'All'; // All, Accepted, Delivered
+  String _selectedFilter = 'All'; // All, Accepted, Delivered, Rejected, Pending
 
   Stream<QuerySnapshot> getCargoStream() {
     User? currentUser = _auth.currentUser;
@@ -174,7 +174,8 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                 SizedBox(width: 8),
                 DropdownButton<String>(
                   value: _selectedFilter,
-                  items: ['All', 'Accepted', 'Delivered'].map((status) {
+                  items: ['All', 'Pending', 'Accepted', 'Delivered', 'Rejected']
+                      .map((status) {
                     return DropdownMenuItem<String>(
                       value: status,
                       child: Text(
@@ -183,7 +184,11 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                 ? 'قبول ٿيل'
                                 : status == 'Delivered'
                                     ? 'پهچايل'
-                                    : 'سڀ')
+                                    : status == 'Rejected'
+                                        ? 'رد ٿيل'
+                                        : status == 'Pending'
+                                            ? 'زير غور'
+                                            : 'سڀ')
                             : status,
                       ),
                     );
@@ -229,6 +234,22 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                           return status == _selectedFilter;
                         }).toList();
 
+                  if (cargoList.isEmpty) {
+                    return Center(
+                      child: Text(
+                        isSindhi
+                            ? (_selectedFilter == 'All'
+                                ? "توهان اڃا تائين ڪا به ڪارگو درخواست نه ڏني آهي."
+                                : "ڪوبه ${_selectedFilter == 'Pending' ? 'زير غور' : _selectedFilter == 'Accepted' ? 'قبول ٿيل' : _selectedFilter == 'Delivered' ? 'پهچايل' : _selectedFilter == 'Rejected' ? 'رد ٿيل' : ''} بڪنگ ناهي.")
+                            : (_selectedFilter == 'All'
+                                ? "You have not requested any cargo yet."
+                                : "No ${_selectedFilter.toLowerCase()} booking found."),
+                        style: TextStyle(
+                            fontSize: 18, color: Colors.blue.shade900),
+                        textAlign: TextAlign.center,
+                      ),
+                    );
+                  }
                   return ListView.builder(
                     itemCount: cargoList.length,
                     itemBuilder: (context, index) {
@@ -253,7 +274,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                               ? Colors.blue
                               : (status == 'Delivered'
                                   ? Colors.green
-                                  : Colors.orange));
+                                  : (status == 'Rejected'
+                                      ? Colors.red
+                                      : Colors.orange)));
 
                       return Card(
                         elevation: 3,
@@ -275,8 +298,7 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                               trailing: acceptedBy != null
                                   ? InkWell(
                                       onTap: () {
-                                        String trackingId = cargoList[index]
-                                            .id; // document ID is trackingId
+                                        String trackingId = cargoList[index].id;
                                         _showTruckOwnerDetails(
                                             status, acceptedBy!, trackingId);
                                       },
@@ -290,7 +312,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                                     ? 'پهچايو ويو'
                                                     : status == 'Accepted'
                                                         ? 'قبول ڪيو ويو'
-                                                        : 'بڪ ڪيو ويو')
+                                                        : status == 'Rejected'
+                                                            ? 'رد ڪيو ويو'
+                                                            : 'بڪ ڪيو ويو')
                                                 : status,
                                             style: TextStyle(
                                               color: Colors.white,
@@ -310,7 +334,9 @@ class _MyCargoScreenState extends State<MyCargoScreen> {
                                                   ? 'پهچايو ويو'
                                                   : status == 'Accepted'
                                                       ? 'قبول ڪيو ويو'
-                                                      : 'بڪ ڪيو ويو')
+                                                      : status == 'Rejected'
+                                                          ? 'رد ڪيو ويو'
+                                                          : 'بڪ ڪيو ويو')
                                               : status,
                                           style: TextStyle(
                                             color: Colors.white,

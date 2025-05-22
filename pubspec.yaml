@@ -47,7 +47,6 @@ dependency_overrides:
       url: https://github.com/MisterJimson/flutter_keyboard_visibility.git
       ref: b5e7b0de4fa9eb6a6c076f1120e5f92a77b7679d
       path: flutter_keyboard_visibility
-      
 flutter_icons:
   android: true
   ios: true
